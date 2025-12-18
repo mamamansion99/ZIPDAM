@@ -20,7 +20,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <motion.div 
       variants={itemFadeUp}
-      className="bg-white rounded-2xl p-3 shadow-sm border border-zipdam-border hover:border-zipdam-gold/40 transition-all duration-300 flex flex-col h-full relative overflow-hidden group"
+      className="bg-white rounded-2xl p-3 shadow-sm border border-zipdam-border hover:border-zipdam-gold/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-zipdam-gold/10 transition-all duration-300 flex flex-col h-full relative overflow-hidden group"
     >
       {isPromo && (
         <div className="absolute top-2 left-2 z-10 bg-zipdam-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">

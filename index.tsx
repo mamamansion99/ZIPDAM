@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from './components/Header';
@@ -9,9 +9,31 @@ import { StickyCartBar } from './components/StickyCartBar';
 import { CartProvider } from './components/CartContext';
 import { Toast } from './components/Toast';
 import { CartSheet } from './components/CartSheet';
+import { MOCK_PRODUCTS } from './lib/tokens';
+import { Product } from './types';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'quick' | 'browse'>('quick');
+  const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
+
+  // For the SPA preview (index.html), /api/catalog might not exist unless 
+  // proxied or mocked. We include the fetch for completeness, 
+  // but it will likely fallback to MOCK_PRODUCTS if 404.
+  useEffect(() => {
+    fetch('/api/catalog')
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('API not available');
+      })
+      .then(data => {
+        if (data.products && Array.isArray(data.products)) {
+          setProducts(data.products);
+        }
+      })
+      .catch(err => {
+        console.log("Running in standalone mode or API unavailable, using mock data.");
+      });
+  }, []);
 
   return (
     <CartProvider>
@@ -29,7 +51,7 @@ function App() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.2 }}
               >
-                <QuickOrderView />
+                <QuickOrderView products={products} />
               </motion.div>
             ) : (
               <motion.div
@@ -39,7 +61,7 @@ function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <BrowseView />
+                <BrowseView products={products} />
               </motion.div>
             )}
           </AnimatePresence>

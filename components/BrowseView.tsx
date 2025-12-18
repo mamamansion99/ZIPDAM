@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { containerVariants, tapScale } from '../lib/motion';
 import { ProductCard } from './ProductCard';
-import { MOCK_PRODUCTS, cn } from '../lib/tokens';
+import { cn } from '../lib/tokens';
 import { TH } from '../lib/i18n';
+import { Product } from '../types';
+
+interface BrowseViewProps {
+  products: Product[];
+}
 
 const BRANDS = ['All', 'Onetouch', 'Okamoto', 'Durex'];
 const TYPE_MAP: Record<string, string> = {
@@ -11,12 +16,16 @@ const TYPE_MAP: Record<string, string> = {
   'Gel': TH.filterGel
 };
 const TYPES = ['Condom', 'Gel'];
-const ALL_FEATURES = Array.from(new Set(MOCK_PRODUCTS.flatMap(p => p.features)));
 
-export const BrowseView = () => {
+export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
   const [selectedBrand, setSelectedBrand] = useState('All');
   const [selectedType, setSelectedType] = useState('Condom');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+
+  // Derived unique features from the current product set
+  const allFeatures = useMemo(() => {
+    return Array.from(new Set(products.flatMap(p => p.features)));
+  }, [products]);
 
   const toggleFeature = (f: string) => {
     setSelectedFeatures(prev => 
@@ -24,7 +33,7 @@ export const BrowseView = () => {
     );
   };
 
-  const filteredProducts = MOCK_PRODUCTS.filter(p => {
+  const filteredProducts = products.filter(p => {
     const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
     const typeMatch = p.type === selectedType;
     const featureMatch = selectedFeatures.length === 0 || p.features.some(f => selectedFeatures.includes(f));
@@ -82,7 +91,7 @@ export const BrowseView = () => {
          <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
 
          {/* Features Chips */}
-         {ALL_FEATURES.map(feat => (
+         {allFeatures.map(feat => (
             <button
                key={feat}
                onClick={() => toggleFeature(feat)}

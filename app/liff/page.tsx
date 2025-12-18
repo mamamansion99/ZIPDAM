@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from '../../components/Header';
 import { SegmentedControl } from '../../components/SegmentedControl';
@@ -10,9 +10,26 @@ import { StickyCartBar } from '../../components/StickyCartBar';
 import { CartProvider } from '../../components/CartContext';
 import { Toast } from '../../components/Toast';
 import { CartSheet } from '../../components/CartSheet';
+import { MOCK_PRODUCTS } from '../../lib/tokens';
+import { Product } from '../../types';
 
 export default function LiffPage() {
   const [activeTab, setActiveTab] = useState<'quick' | 'browse'>('quick');
+  const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch real data on mount
+    fetch('/api/catalog')
+      .then(res => res.json())
+      .then(data => {
+        if (data.products && Array.isArray(data.products)) {
+          setProducts(data.products);
+        }
+      })
+      .catch(err => console.error("Failed to load catalog", err))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   return (
     <CartProvider>
@@ -30,7 +47,7 @@ export default function LiffPage() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.2 }}
               >
-                <QuickOrderView />
+                <QuickOrderView products={products} />
               </motion.div>
             ) : (
               <motion.div
@@ -40,7 +57,7 @@ export default function LiffPage() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <BrowseView />
+                <BrowseView products={products} />
               </motion.div>
             )}
           </AnimatePresence>

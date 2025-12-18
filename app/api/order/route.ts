@@ -1,25 +1,47 @@
 import { NextResponse } from 'next/server';
 
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyO5Tss2wroIryFIpJ8SBmvuLCX2-DfIc8kn3PXznMqS4zDptE_cXXf80KR6UI0Y5Bk/exec';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { idToken, cart } = body;
 
-    if (!idToken || !cart || cart.length === 0) {
+    if (!cart || cart.length === 0) {
       return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
     }
 
-    // 1. Verify ID Token with LINE
-    // const profile = await verifyLineToken(idToken);
+    // Proxy the order to Google Apps Script
+    // We wrap the payload in an action structure
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'createOrder',
+        payload: {
+          idToken,
+          cart,
+          timestamp: new Date().toISOString()
+        }
+      })
+    });
 
-    // 2. Post to Google Apps Script
-    // await fetch(process.env.GAS_URL, { method: 'POST', body: JSON.stringify({...}) });
+    if (!res.ok) {
+        throw new Error('GAS responded with error');
+    }
+
+    const data = await res.json();
 
     return NextResponse.json({ 
       success: true, 
-      orderId: 'ORD-' + Date.now().toString().slice(-6) 
+      orderId: data.orderId || 'ORD-' + Date.now().toString().slice(-6),
+      details: data 
     });
+
   } catch (error) {
+    console.error("Order Submit Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

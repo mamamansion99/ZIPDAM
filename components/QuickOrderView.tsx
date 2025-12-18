@@ -1,26 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { containerVariants, itemFadeUp, tapScale } from '../lib/motion';
 import { useCart } from './CartContext';
-import { MOCK_PRODUCTS } from '../lib/tokens';
 import { TH, formatTHB } from '../lib/i18n';
+import { Product } from '../types';
 
-export const QuickOrderView = () => {
+interface QuickOrderViewProps {
+  products: Product[];
+}
+
+export const QuickOrderView: React.FC<QuickOrderViewProps> = ({ products }) => {
   const { addToCart } = useCart();
   const [quickText, setQuickText] = useState('');
 
-  // Mock Favorites
-  const favorites = MOCK_PRODUCTS.slice(0, 3);
+  // Favorites logic: First 3 items for now
+  const favorites = useMemo(() => products.slice(0, 3), [products]);
   
-  // Mock Bundles
-  const bundles = [
-    { id: 'b1', name: 'Safe Weekend', items: [MOCK_PRODUCTS[0], MOCK_PRODUCTS[3]], price: 175, desc: '003 Platinum x2 + เจลสูตรน้ำ' },
-    { id: 'b2', name: 'Explorer Pack', items: [MOCK_PRODUCTS[1], MOCK_PRODUCTS[5]], price: 130, desc: 'กลิ่นสตรอเบอร์รี่ + กลิ่นช็อกโกแลต' }
-  ];
+  // Dynamic Bundles generation based on available products
+  const bundles = useMemo(() => {
+    const list = [];
+    
+    if (products.length >= 4) {
+      list.push({ 
+        id: 'b1', 
+        name: 'Safe Weekend', 
+        items: [products[0], products[3]].filter(Boolean), 
+        price: (products[0]?.price || 0) + (products[3]?.price || 0) - 10, 
+        desc: `${products[0]?.name} + ${products[3]?.name}`
+      });
+    }
+    
+    if (products.length >= 6) {
+      list.push({ 
+        id: 'b2', 
+        name: 'Explorer Pack', 
+        items: [products[1], products[5]].filter(Boolean), 
+        price: (products[1]?.price || 0) + (products[5]?.price || 0) - 15, 
+        desc: `${products[1]?.name} + ${products[5]?.name}`
+      });
+    }
+    
+    return list;
+  }, [products]);
 
   const handleQuickAdd = () => {
-    if (quickText.toLowerCase().includes('durex')) {
-       addToCart(MOCK_PRODUCTS[2]);
+    // Simple heuristic for demo purposes
+    const target = products.find(p => p.brand.toLowerCase().includes(quickText.toLowerCase()) || p.name.toLowerCase().includes(quickText.toLowerCase()));
+    
+    if (target) {
+       addToCart(target);
        setQuickText('');
     }
   };
