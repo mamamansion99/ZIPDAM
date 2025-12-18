@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --zip-bg: #FAFAFA;
+  --zip-surface: #FFFFFF;
+  --zip-surface2: #F4F4F5;
+  --zip-text: #18181B;
+  --zip-muted: #71717A;
+  --zip-border: #E4E4E7;
+  
+  /* Vibrant Gold Palette from Reference */
+  --zip-gold: #FF8F00;      /* Rich Amber for text/borders */
+  --zip-goldHover: #FF6F00; /* Darker Amber for hover */
+  
+  --zip-success: #16A34A;
+  --zip-danger: #DC2626;
+}
+
+body {
+  background-color: var(--zip-bg);
+  color: var(--zip-text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Utilities */
+.bg-zipdam-bg { background-color: var(--zip-bg); }
+.bg-zipdam-surface { background-color: var(--zip-surface); }
+.bg-zipdam-surface2 { background-color: var(--zip-surface2); }
+.text-zipdam-text { color: var(--zip-text); }
+.text-zipdam-muted { color: var(--zip-muted); }
+.border-zipdam-border { border-color: var(--zip-border); }
+.bg-zipdam-gold { background-color: var(--zip-gold); }
+.text-zipdam-gold { color: var(--zip-gold); }
+.border-zipdam-gold { border-color: var(--zip-gold); }
+.bg-zipdam-goldHover { background-color: var(--zip-goldHover); }
+.bg-zipdam-success { background-color: var(--zip-success); }
+.bg-zipdam-danger { background-color: var(--zip-danger); }
+.text-zipdam-danger { color: var(--zip-danger); }
+
+/* Aesthetic Gradients */
+.bg-zipdam-gradient {
+  /* Vibrant Yellow to Rich Orange Gradient */
+  background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
+}
+.text-zipdam-gradient {
+  background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
