@@ -5,6 +5,62 @@ export default async function handler(req, res) {
     return;
   }
 
+  const normalizeProduct = (item) => {
+    if (!item) return null;
+
+    const brand = item.Brand || item.brand || 'Unknown';
+    const name = item.Name || item.name || item.SKU || 'สินค้า';
+    const sku = item.SKU || item.id || `${brand}-${name}`.replace(/\s+/g, '-');
+
+    const size = (() => {
+      const mm = item.mm;
+      if (mm && mm !== '-') {
+        const mmStr = String(mm).trim();
+        return mmStr.includes('mm') ? mmStr : `${mmStr}mm`;
+      }
+      if (item.Size) return String(item.Size);
+      return '';
+    })();
+
+    const packSize = (() => {
+      const p = item.pack;
+      const num = Number(p);
+      if (Number.isFinite(num)) return num;
+      return 1;
+    })();
+
+    const price = Number(item.final_price ?? item.price ?? 0) || 0;
+    const promoPrice = item.promo_price != null ? Number(item.promo_price) : undefined;
+
+    const type = (() => {
+      const t = item.Type || item.type || '';
+      const s = item.Size || '';
+      const source = `${t} ${s}`.toLowerCase();
+      return source.includes('gel') ? 'Gel' : 'Condom';
+    })();
+
+    const features = Array.isArray(item.Feature)
+      ? item.Feature
+      : Array.isArray(item.features)
+      ? item.features
+      : [];
+
+    const imageKey = item.image_key || item.imageKey || '';
+
+    return {
+      id: sku,
+      brand,
+      name,
+      size,
+      packSize,
+      price,
+      promoPrice,
+      imageKey,
+      type,
+      features,
+    };
+  };
+
   try {
     const response = await fetch(`${gasUrl}?action=catalog`, { method: "GET" });
     const text = await response.text();
@@ -17,8 +73,19 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (payload && !payload.products && Array.isArray(payload.catalog)) {
-      payload = { ok: payload.ok !== false, products: payload.catalog, catalog: payload.catalog };
+    const rawProducts = Array.isArray(payload?.products)
+      ? payload.products
+      : Array.isArray(payload?.catalog)
+      ? payload.catalog
+      : null;
+
+    if (rawProducts) {
+      const normalized = rawProducts.map(normalizeProduct).filter(Boolean);
+      payload = {
+        ok: payload?.ok !== false,
+        products: normalized,
+        catalog: payload.catalog ?? normalized,
+      };
     }
 
     res.status(response.status).json(payload);
