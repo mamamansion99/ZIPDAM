@@ -15,11 +15,32 @@ export const CartSheet = () => {
     setIsSubmitting(true);
     try {
       const auth = getLiffAuth();
+
+      let idToken = auth.idToken || '';
+      let lineUserId = auth.lineUserId || '';
+      let displayName = auth.displayName || '';
+
+      // Refresh LIFF idToken/profile right before submit (idToken can expire).
+      try {
+        const liff = (await import('@line/liff')).default;
+        if (liff?.isLoggedIn && liff.isLoggedIn()) {
+          const t = liff.getIDToken && liff.getIDToken();
+          if (t) idToken = t;
+          if (liff.getProfile) {
+            const p = await liff.getProfile();
+            if (p?.userId) lineUserId = p.userId;
+            if (p?.displayName) displayName = p.displayName;
+          }
+        }
+      } catch (_) {
+        // ignore if not in LIFF context
+      }
+
       const payload = {
         action: 'order',
-        idToken: auth.idToken || '',
-        lineUserId: auth.lineUserId || '',
-        displayName: auth.displayName || '',
+        idToken,
+        lineUserId,
+        displayName,
         cart: items.map(i => ({
           SKU: i.id,
           Brand: i.brand,

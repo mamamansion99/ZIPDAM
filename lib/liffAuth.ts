@@ -2,6 +2,7 @@ export interface LiffAuth {
   idToken?: string | null;
   lineUserId?: string;
   displayName?: string;
+  pictureUrl?: string;
 }
 
 let currentAuth: LiffAuth = {};

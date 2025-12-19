@@ -44,6 +44,7 @@ function App() {
             idToken: idToken || undefined,
             lineUserId: p?.userId,
             displayName: p?.displayName,
+            pictureUrl: p?.pictureUrl,
           });
           setProfile({ displayName: p?.displayName, pictureUrl: p?.pictureUrl });
         }
