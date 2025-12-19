@@ -2,7 +2,14 @@ import React from 'react';
 import { DEMO_USER } from '../lib/tokens';
 import { TH } from '../lib/i18n';
 
-export const Header = () => {
+type HeaderProps = {
+  displayName?: string;
+  pictureUrl?: string;
+};
+
+export const Header = ({ displayName, pictureUrl }: HeaderProps) => {
+  const name = displayName || DEMO_USER.displayName;
+  const avatar = pictureUrl || DEMO_USER.pictureUrl;
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md pt-4 pb-2 px-4 transition-all border-b border-zipdam-border/50">
       {/* Top Row: Identity */}
@@ -10,7 +17,7 @@ export const Header = () => {
         <div className="flex items-center gap-3">
           <div className="relative">
             <img 
-              src={DEMO_USER.pictureUrl} 
+              src={avatar} 
               alt="Avatar" 
               className="w-9 h-9 rounded-full border border-zipdam-border object-cover" 
             />
@@ -18,7 +25,7 @@ export const Header = () => {
           </div>
           <div className="flex flex-col">
              <span className="text-[10px] text-zipdam-muted font-medium uppercase tracking-wider">{TH.greeting}</span>
-             <span className="text-sm font-bold text-zipdam-text -mt-0.5">{DEMO_USER.displayName}</span>
+             <span className="text-sm font-bold text-zipdam-text -mt-0.5">{name}</span>
           </div>
         </div>
         

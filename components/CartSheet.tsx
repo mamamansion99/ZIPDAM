@@ -144,7 +144,14 @@ export const CartSheet = () => {
                disabled={items.length === 0 || isSubmitting}
                onClick={handleCheckout}
             >
-               {isSubmitting ? 'กำลังสั่งซื้อ...' : TH.placeOrder}
+               {isSubmitting ? (
+                 <span className="flex items-center justify-center gap-2">
+                   <span className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin"></span>
+                   <span>กำลังสั่งซื้อ...</span>
+                 </span>
+               ) : (
+                 TH.placeOrder
+               )}
             </motion.button>
          </div>
       </motion.div>

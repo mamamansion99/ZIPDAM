@@ -12,14 +12,20 @@ import { Toast } from '../../components/Toast';
 import { CartSheet } from '../../components/CartSheet';
 import { MOCK_PRODUCTS } from '../../lib/tokens';
 import { Product } from '../../types';
-import { setLiffAuth } from '../../lib/liffAuth';
+import { setLiffAuth, getLiffAuth } from '../../lib/liffAuth';
 
 export default function LiffPage() {
   const [activeTab, setActiveTab] = useState<'quick' | 'browse'>('quick');
   const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
   const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<{ displayName?: string; pictureUrl?: string }>({});
 
   useEffect(() => {
+    const existing = getLiffAuth();
+    if (existing.displayName || existing.lineUserId) {
+      setProfile({ displayName: existing.displayName, pictureUrl: existing.pictureUrl });
+    }
+
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '2008727011-FNiAJIzb';
     let cancelled = false;
     if (!liffId) return;
@@ -33,13 +39,14 @@ export default function LiffPage() {
           liff.login({ redirectUri: window.location.href });
           return;
         }
-        const [profile, idToken] = await Promise.all([liff.getProfile(), liff.getIDToken()]);
+        const [p, idToken] = await Promise.all([liff.getProfile(), liff.getIDToken()]);
         if (!cancelled) {
           setLiffAuth({
             idToken: idToken || undefined,
-            lineUserId: profile?.userId,
-            displayName: profile?.displayName,
+            lineUserId: p?.userId,
+            displayName: p?.displayName,
           });
+          setProfile({ displayName: p?.displayName, pictureUrl: p?.pictureUrl });
         }
       } catch (err) {
         console.error('LIFF init failed', err);
@@ -48,6 +55,18 @@ export default function LiffPage() {
 
     return () => { cancelled = true; };
   }, []);
+
+  const renderSkeleton = () => (
+    <div className="space-y-4 px-4 mt-2">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white border border-zipdam-border rounded-2xl p-4 shadow-sm animate-pulse">
+          <div className="h-4 w-32 bg-zipdam-border/50 rounded mb-3"></div>
+          <div className="h-3 w-full bg-zipdam-border/40 rounded mb-2"></div>
+          <div className="h-3 w-4/5 bg-zipdam-border/30 rounded"></div>
+        </div>
+      ))}
+    </div>
+  );
 
   useEffect(() => {
     // Fetch real data on mount
@@ -65,34 +84,38 @@ export default function LiffPage() {
   return (
     <CartProvider>
       <main className="min-h-screen pb-safe-area relative bg-zipdam-bg text-zipdam-text font-sans">
-        <Header />
+        <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
         <SegmentedControl activeTab={activeTab} onChange={setActiveTab} />
         
-        <div className="mt-4">
-          <AnimatePresence mode="wait">
-            {activeTab === 'quick' ? (
-              <motion.div
-                key="quick"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <QuickOrderView products={products} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="browse"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <BrowseView products={products} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {isLoading ? (
+          <div className="mt-4">{renderSkeleton()}</div>
+        ) : (
+          <div className="mt-4">
+            <AnimatePresence mode="wait">
+              {activeTab === 'quick' ? (
+                <motion.div
+                  key="quick"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <QuickOrderView products={products} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="browse"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <BrowseView products={products} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         <StickyCartBar />
         <Toast />
