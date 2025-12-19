@@ -7,7 +7,7 @@ import { TH, formatTHB } from '../lib/i18n';
 import { getLiffAuth } from '../lib/liffAuth';
 
 export const CartSheet = () => {
-  const { isCartOpen, setCartOpen, items, updateQty, removeFromCart, itemsTotal, grandTotal, clearCart } = useCart();
+  const { isCartOpen, setCartOpen, items, updateQty, removeFromCart, itemsTotal, grandTotal, clearCart, triggerOrderSuccess } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCheckout = async () => {
@@ -64,7 +64,7 @@ export const CartSheet = () => {
 
       clearCart();
       setCartOpen(false);
-      setTimeout(() => alert(data.orderId ? `${TH.placeOrder} สำเร็จ: ${data.orderId}` : `${TH.placeOrder} สำเร็จ`), 0);
+      triggerOrderSuccess(data.orderId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setTimeout(() => alert(`สั่งซื้อไม่สำเร็จ: ${msg}`), 0);

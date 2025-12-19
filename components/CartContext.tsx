@@ -15,6 +15,9 @@ interface CartContextType {
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
   lastAddedId: string | null;
+  orderSuccess: { orderId?: string } | null;
+  triggerOrderSuccess: (orderId?: string) => void;
+  dismissOrderSuccess: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -23,6 +26,7 @@ export function CartProvider({ children }: { children?: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<{ orderId?: string } | null>(null);
 
   // Auto-clear last added trigger
   useEffect(() => {
@@ -61,6 +65,10 @@ export function CartProvider({ children }: { children?: React.ReactNode }) {
 
   const clearCart = () => setItems([]);
 
+  const triggerOrderSuccess = (orderId?: string) => setOrderSuccess({ orderId });
+
+  const dismissOrderSuccess = () => setOrderSuccess(null);
+
   const itemsCount = useMemo(() => items.reduce((acc, i) => acc + i.qty, 0), [items]);
   
   const itemsTotal = useMemo(() => items.reduce((acc, i) => {
@@ -82,7 +90,10 @@ export function CartProvider({ children }: { children?: React.ReactNode }) {
       grandTotal,
       isCartOpen,
       setCartOpen,
-      lastAddedId
+      lastAddedId,
+      orderSuccess,
+      triggerOrderSuccess,
+      dismissOrderSuccess
     }}>
       {children}
     </CartContext.Provider>

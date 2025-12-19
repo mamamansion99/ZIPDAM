@@ -27,6 +27,10 @@ export const TH = {
   remove: "ลบ",
   checkout: "ชำระเงิน",
   experimental: "ทดลองใช้: พิมพ์ชื่อแบรนด์และจำนวน",
+  orderSuccessTitle: "สั่งซื้อสำเร็จ",
+  orderSuccessMessage: "สรุปรายการสินค้านั้นได้ส่งไปในแชท LINE พร้อมราคาเรียบร้อยแล้วครับ",
+  orderSuccessHint: "กดปิดหน้านี้และกลับไปที่ LINE ได้เลยครับ",
+  orderSuccessCTA: "ปิดหน้านี้และกลับไปที่ LINE",
   // Filters
   filterAll: "ทั้งหมด",
   filterCondom: "ถุงยาง",

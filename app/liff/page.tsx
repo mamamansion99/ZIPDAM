@@ -10,6 +10,7 @@ import { StickyCartBar } from '../../components/StickyCartBar';
 import { CartProvider } from '../../components/CartContext';
 import { Toast } from '../../components/Toast';
 import { CartSheet } from '../../components/CartSheet';
+import { OrderSuccess } from '../../components/OrderSuccess';
 import { MOCK_PRODUCTS } from '../../lib/tokens';
 import { Product } from '../../types';
 import { setLiffAuth, getLiffAuth } from '../../lib/liffAuth';
@@ -121,6 +122,7 @@ export default function LiffPage() {
         <StickyCartBar />
         <Toast />
         <CartSheet />
+        <OrderSuccess />
       </main>
     </CartProvider>
   );
