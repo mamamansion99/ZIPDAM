@@ -55,8 +55,8 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
-  // For the SPA preview (index.html), /api/catalog might not exist unless 
-  // proxied or mocked. We include the fetch for completeness, 
+  // For the SPA preview (index.html), /api/catalog might not exist unless
+  // proxied or mocked. We include the fetch for completeness,
   // but it will likely fallback to MOCK_PRODUCTS if 404.
   useEffect(() => {
     fetch('/api/catalog')
@@ -69,42 +69,59 @@ function App() {
           setProducts(data.products);
         }
       })
-      .catch(err => {
+      .catch(() => {
         console.log("Running in standalone mode or API unavailable, using mock data.");
-      });
+      })
+      .finally(() => setIsLoading(false));
   }, []);
+
+  const renderSkeleton = () => (
+    <div className="space-y-4 px-4 mt-2">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white border border-zipdam-border rounded-2xl p-4 shadow-sm animate-pulse">
+          <div className="h-4 w-32 bg-zipdam-border/50 rounded mb-3"></div>
+          <div className="h-3 w-full bg-zipdam-border/40 rounded mb-2"></div>
+          <div className="h-3 w-4/5 bg-zipdam-border/30 rounded"></div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <CartProvider>
       <main className="min-h-screen pb-24 relative bg-zipdam-surface font-sans text-zipdam-text">
-        <Header />
+        <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
         <SegmentedControl activeTab={activeTab} onChange={setActiveTab} />
-        
-        <div className="mt-4">
-          <AnimatePresence mode="wait">
-            {activeTab === 'quick' ? (
-              <motion.div
-                key="quick"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <QuickOrderView products={products} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="browse"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <BrowseView products={products} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+
+        {isLoading ? (
+          <div className="mt-4">{renderSkeleton()}</div>
+        ) : (
+          <div className="mt-4">
+            <AnimatePresence mode="wait">
+              {activeTab === 'quick' ? (
+                <motion.div
+                  key="quick"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <QuickOrderView products={products} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="browse"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <BrowseView products={products} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         <StickyCartBar />
         <Toast />
