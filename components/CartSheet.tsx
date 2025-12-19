@@ -64,10 +64,10 @@ export const CartSheet = () => {
 
       clearCart();
       setCartOpen(false);
-      alert(data.orderId ? `${TH.placeOrder} สำเร็จ: ${data.orderId}` : `${TH.placeOrder} สำเร็จ`);
+      setTimeout(() => alert(data.orderId ? `${TH.placeOrder} สำเร็จ: ${data.orderId}` : `${TH.placeOrder} สำเร็จ`), 0);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      alert(`สั่งซื้อไม่สำเร็จ: ${msg}`);
+      setTimeout(() => alert(`สั่งซื้อไม่สำเร็จ: ${msg}`), 0);
     } finally {
       setIsSubmitting(false);
     }
