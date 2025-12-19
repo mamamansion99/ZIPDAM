@@ -12,11 +12,42 @@ import { Toast } from '../../components/Toast';
 import { CartSheet } from '../../components/CartSheet';
 import { MOCK_PRODUCTS } from '../../lib/tokens';
 import { Product } from '../../types';
+import { setLiffAuth } from '../../lib/liffAuth';
 
 export default function LiffPage() {
   const [activeTab, setActiveTab] = useState<'quick' | 'browse'>('quick');
   const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '2008727011-FNiAJIzb';
+    let cancelled = false;
+    if (!liffId) return;
+
+    (async () => {
+      try {
+        const liff = (await import('@line/liff')).default;
+        await liff.init({ liffId });
+        await liff.ready;
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+        const [profile, idToken] = await Promise.all([liff.getProfile(), liff.getIDToken()]);
+        if (!cancelled) {
+          setLiffAuth({
+            idToken: idToken || undefined,
+            lineUserId: profile?.userId,
+            displayName: profile?.displayName,
+          });
+        }
+      } catch (err) {
+        console.error('LIFF init failed', err);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     // Fetch real data on mount

@@ -4,6 +4,7 @@ import { useCart } from './CartContext';
 import { SHIPPING_FEE } from '../lib/tokens';
 import { slideUpSheet, tapScale } from '../lib/motion';
 import { TH, formatTHB } from '../lib/i18n';
+import { getLiffAuth } from '../lib/liffAuth';
 
 export const CartSheet = () => {
   const { isCartOpen, setCartOpen, items, updateQty, removeFromCart, itemsTotal, grandTotal, clearCart } = useCart();
@@ -13,8 +14,12 @@ export const CartSheet = () => {
     if (!items.length || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      const auth = getLiffAuth();
       const payload = {
         action: 'order',
+        idToken: auth.idToken || '',
+        lineUserId: auth.lineUserId || '',
+        displayName: auth.displayName || '',
         cart: items.map(i => ({
           SKU: i.id,
           Brand: i.brand,
