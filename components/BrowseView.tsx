@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, tapScale } from '../lib/motion';
 import { ProductCard } from './ProductCard';
 import { cn } from '../lib/tokens';
 import { TH } from '../lib/i18n';
 import { Product } from '../types';
+import { ProductDetailModal } from './ProductDetailModal';
 
 interface BrowseViewProps {
   products: Product[];
@@ -22,6 +23,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
   const [selectedType, setSelectedType] = useState('Condom');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [selectedSize, setSelectedSize] = useState('ALL');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Derived unique features from the current product set
   const allFeatures = useMemo(() => {
@@ -150,7 +152,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
       {/* Grid */}
       <div className="px-4 grid grid-cols-2 gap-3 mt-4">
          {filteredProducts.map(p => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} onSelect={setSelectedProduct} />
          ))}
          {filteredProducts.length === 0 && (
             <div className="col-span-2 py-10 text-center text-zipdam-muted text-sm">
@@ -158,6 +160,15 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
             </div>
          )}
       </div>
+
+      <AnimatePresence>
+        {selectedProduct && (
+          <ProductDetailModal
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

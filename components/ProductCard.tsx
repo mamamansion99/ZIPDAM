@@ -8,9 +8,10 @@ import { TH, formatTHB } from '../lib/i18n';
 
 interface ProductCardProps {
   product: Product;
+  onSelect?: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
   const { addToCart, items } = useCart();
   const inCartQty = items.find(i => i.id === product.id)?.qty || 0;
   
@@ -20,7 +21,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <motion.div 
       variants={itemFadeUp}
-      className="bg-white rounded-2xl p-3 shadow-sm border border-zipdam-border hover:border-zipdam-gold/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-zipdam-gold/10 transition-all duration-300 flex flex-col h-full relative overflow-hidden group"
+      onClick={() => onSelect?.(product)}
+      className="bg-white rounded-2xl p-3 shadow-sm border border-zipdam-border hover:border-zipdam-gold/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-zipdam-gold/10 transition-all duration-300 flex flex-col h-full relative overflow-hidden group cursor-pointer"
     >
       {isPromo && (
         <div className="absolute top-2 left-2 z-10 bg-zipdam-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
@@ -69,7 +71,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           <motion.button
             whileTap={tapScale}
-            onClick={() => addToCart(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCart(product);
+            }}
             className={cn(
               "h-9 w-9 rounded-full flex items-center justify-center transition-all border shadow-sm",
               inCartQty > 0 
