@@ -21,6 +21,7 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
   const [selectedBrand, setSelectedBrand] = useState('All');
   const [selectedType, setSelectedType] = useState('Condom');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [selectedSize, setSelectedSize] = useState('ALL');
 
   // Derived unique features from the current product set
   const allFeatures = useMemo(() => {
@@ -33,11 +34,27 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
     );
   };
 
+  const sizeOptions = useMemo(() => {
+    const unique = new Set(
+      products
+        .filter(p => p.type === selectedType)
+        .map(p => p.size)
+    );
+    return ['ALL', ...Array.from(unique).sort((a, b) => {
+      const getNum = (s: string) => {
+        const m = s.match(/([0-9]+(?:\.[0-9]+)?)/);
+        return m ? parseFloat(m[1]) : Number.POSITIVE_INFINITY;
+      };
+      return getNum(a) - getNum(b);
+    })];
+  }, [products, selectedType]);
+
   const filteredProducts = products.filter(p => {
     const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
     const typeMatch = p.type === selectedType;
+    const sizeMatch = selectedSize === 'ALL' || p.size === selectedSize;
     const featureMatch = selectedFeatures.length === 0 || p.features.some(f => selectedFeatures.includes(f));
-    return brandMatch && typeMatch && featureMatch;
+    return brandMatch && typeMatch && sizeMatch && featureMatch;
   });
 
   return (
@@ -88,6 +105,29 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
             ))}
          </div>
          
+         <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
+
+         {/* Size filter */}
+         <div className="flex items-center gap-2 shrink-0">
+           <span className="text-xs font-semibold text-zipdam-muted">{TH.filterSize}</span>
+           <div className="flex gap-1">
+             {sizeOptions.map(size => (
+               <button
+                 key={size}
+                 onClick={() => setSelectedSize(size)}
+                 className={cn(
+                   "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap",
+                   selectedSize === size
+                     ? "bg-zipdam-gold/10 border-zipdam-gold text-zipdam-gold"
+                     : "bg-white border-zipdam-border text-zipdam-muted hover:border-zipdam-muted"
+                 )}
+               >
+                 {size === 'ALL' ? TH.filterSizeAll : size}
+               </button>
+             ))}
+           </div>
+         </div>
+
          <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
 
          {/* Features Chips */}

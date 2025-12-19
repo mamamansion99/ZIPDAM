@@ -35,6 +35,8 @@ export const TH = {
   filterAll: "ทั้งหมด",
   filterCondom: "ถุงยาง",
   filterGel: "เจล",
+  filterSize: "ขนาด",
+  filterSizeAll: "ทุกขนาด",
 };
 
 export const formatTHB = (amount: number) => {
