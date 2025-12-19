@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from './CartContext';
 import { SHIPPING_FEE } from '../lib/tokens';
@@ -6,7 +6,46 @@ import { slideUpSheet, tapScale } from '../lib/motion';
 import { TH, formatTHB } from '../lib/i18n';
 
 export const CartSheet = () => {
-  const { isCartOpen, setCartOpen, items, updateQty, removeFromCart, itemsTotal, grandTotal } = useCart();
+  const { isCartOpen, setCartOpen, items, updateQty, removeFromCart, itemsTotal, grandTotal, clearCart } = useCart();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCheckout = async () => {
+    if (!items.length || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        action: 'order',
+        cart: items.map(i => ({
+          SKU: i.id,
+          Brand: i.brand,
+          Size: i.size,
+          Name: i.name,
+          qty: i.qty,
+          price: i.promoPrice ?? i.price,
+        })),
+      };
+
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || 'Order failed');
+      }
+
+      clearCart();
+      setCartOpen(false);
+      alert(data.orderId ? `${TH.placeOrder} สำเร็จ: ${data.orderId}` : `${TH.placeOrder} สำเร็จ`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert(`สั่งซื้อไม่สำเร็จ: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (!isCartOpen) return null;
 
@@ -97,12 +136,10 @@ export const CartSheet = () => {
             <motion.button
                whileTap={tapScale}
                className="w-full bg-zipdam-gradient text-white h-14 rounded-xl font-bold text-lg shadow-lg shadow-zipdam-gold/20 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-shadow"
-               disabled={items.length === 0}
-               onClick={() => {
-                  alert(TH.checkout + ' (Mock)');
-               }}
+               disabled={items.length === 0 || isSubmitting}
+               onClick={handleCheckout}
             >
-               {TH.placeOrder}
+               {isSubmitting ? 'กำลังสั่งซื้อ...' : TH.placeOrder}
             </motion.button>
          </div>
       </motion.div>

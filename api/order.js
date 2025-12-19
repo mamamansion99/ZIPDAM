@@ -13,10 +13,24 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
+    const cart = Array.isArray(body?.cart) ? body.cart : [];
+    if (!cart.length) {
+      res.status(400).json({ ok: false, error: "Cart is empty" });
+      return;
+    }
+
+    const payload = {
+      action: body.action || "order",
+      idToken: body.idToken || "",
+      lineUserId: body.lineUserId || "",
+      displayName: body.displayName || "",
+      cart,
+    };
+
     const response = await fetch(gasUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
 
     const text = await response.text();
