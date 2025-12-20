@@ -7,6 +7,7 @@ import { QuickOrderView } from './components/QuickOrderView';
 import { BrowseView } from './components/BrowseView';
 import { StickyCartBar } from './components/StickyCartBar';
 import { CartProvider } from './components/CartContext';
+import { FavoritesProvider } from './components/FavoritesContext';
 import { Toast } from './components/Toast';
 import { CartSheet } from './components/CartSheet';
 import { OrderSuccess } from './components/OrderSuccess';
@@ -91,6 +92,7 @@ function App() {
 
   return (
     <CartProvider>
+      <FavoritesProvider>
       <main className="min-h-screen pb-24 relative bg-zipdam-surface font-sans text-zipdam-text">
         <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
         <SegmentedControl activeTab={activeTab} onChange={setActiveTab} />
@@ -130,6 +132,7 @@ function App() {
         <CartSheet />
         <OrderSuccess />
       </main>
+      </FavoritesProvider>
     </CartProvider>
   );
 }

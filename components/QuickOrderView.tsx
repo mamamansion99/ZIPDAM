@@ -4,6 +4,7 @@ import { containerVariants, itemFadeUp, tapScale } from '../lib/motion';
 import { useCart } from './CartContext';
 import { TH, formatTHB } from '../lib/i18n';
 import { Product } from '../types';
+import { useFavorites } from './FavoritesContext';
 
 interface QuickOrderViewProps {
   products: Product[];
@@ -12,9 +13,13 @@ interface QuickOrderViewProps {
 export const QuickOrderView: React.FC<QuickOrderViewProps> = ({ products }) => {
   const { addToCart } = useCart();
   const [quickText, setQuickText] = useState('');
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   // Favorites logic: First 3 items for now
-  const favorites = useMemo(() => products.slice(0, 3), [products]);
+  const favoriteProducts = useMemo(() => {
+    if (!favorites?.length) return [];
+    return products.filter(p => isFavorite(p));
+  }, [favorites, products, isFavorite]);
   
   // Dynamic Bundles generation based on available products
   const bundles = useMemo(() => {
@@ -88,11 +93,11 @@ export const QuickOrderView: React.FC<QuickOrderViewProps> = ({ products }) => {
             <h2 className="text-lg font-bold text-zipdam-text">{TH.sectionFavorites}</h2>
             <button className="text-xs text-zipdam-gold font-medium hover:text-zipdam-goldHover hover:underline">{TH.edit}</button>
          </div>
-         {favorites.length === 0 ? (
+         {favoriteProducts.length === 0 ? (
            <div className="text-zipdam-muted text-center py-4 text-sm">{TH.emptyFavorites}</div>
          ) : (
            <div className="space-y-3">
-              {favorites.map(fav => {
+              {favoriteProducts.map(fav => {
                 const cleanKey = (fav.imageKey || '').trim();
                 const fallback = `https://picsum.photos/seed/${cleanKey || 'zipdam'}/100/100`;
                 const imageSrc = cleanKey.startsWith('http') ? cleanKey : fallback;
@@ -118,6 +123,16 @@ export const QuickOrderView: React.FC<QuickOrderViewProps> = ({ products }) => {
                         </div>
                      </div>
                      <div className="flex gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(fav);
+                          }}
+                          className="w-8 h-8 rounded-lg bg-white border border-zipdam-border text-zipdam-muted hover:text-zipdam-gold hover:border-zipdam-gold text-xs font-bold"
+                          aria-label="Remove favorite"
+                        >
+                          ×
+                        </button>
                         {[1, 2, 3].map(q => (
                            <motion.button
                               key={q}

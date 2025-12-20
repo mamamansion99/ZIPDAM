@@ -8,6 +8,7 @@ import { QuickOrderView } from '../../components/QuickOrderView';
 import { BrowseView } from '../../components/BrowseView';
 import { StickyCartBar } from '../../components/StickyCartBar';
 import { CartProvider } from '../../components/CartContext';
+import { FavoritesProvider } from '../../components/FavoritesContext';
 import { Toast } from '../../components/Toast';
 import { CartSheet } from '../../components/CartSheet';
 import { OrderSuccess } from '../../components/OrderSuccess';
@@ -85,6 +86,7 @@ export default function LiffPage() {
 
   return (
     <CartProvider>
+      <FavoritesProvider>
       <main className="min-h-screen pb-safe-area relative bg-zipdam-bg text-zipdam-text font-sans">
         <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
         <SegmentedControl activeTab={activeTab} onChange={setActiveTab} />
@@ -124,6 +126,7 @@ export default function LiffPage() {
         <CartSheet />
         <OrderSuccess />
       </main>
+      </FavoritesProvider>
     </CartProvider>
   );
 }

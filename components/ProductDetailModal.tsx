@@ -5,6 +5,7 @@ import { formatTHB, TH } from '../lib/i18n';
 import { tapScale } from '../lib/motion';
 import { useCart } from './CartContext';
 import { cn } from '../lib/tokens';
+import { useFavorites } from './FavoritesContext';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -13,6 +14,7 @@ interface ProductDetailModalProps {
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose }) => {
   const { addToCart } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const isPromo = product.promoPrice && product.promoPrice > 0;
   const currentPrice = isPromo ? product.promoPrice! : product.price;
   const cleanKey = useMemo(() => (product.imageKey || '').trim(), [product.imageKey]);
@@ -78,6 +80,28 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 {TH.promo}
               </div>
             )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(product);
+              }}
+              className={cn(
+                "absolute top-3 right-3 w-9 h-9 rounded-full border flex items-center justify-center bg-white/90 backdrop-blur-sm shadow-sm",
+                isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/50" : "text-zipdam-muted border-zipdam-border"
+              )}
+              aria-label="Toggle favorite"
+            >
+              {isFavorite(product) ? (
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
 
