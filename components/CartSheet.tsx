@@ -489,10 +489,9 @@ export const CartSheet = () => {
                   onClick={() => {
                     persistContact(contactInfo);
                     setShowContactModal(false);
-                    performCheckout();
                   }}
                 >
-                  บันทึกและสั่งซื้อ
+                  บันทึก
                 </button>
               </div>
             </div>
