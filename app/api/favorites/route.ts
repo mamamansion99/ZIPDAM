@@ -3,32 +3,31 @@ import { NextResponse } from 'next/server';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyGW57XZPWYbhOv5vv5EpFj4-rVJmJATFQKe2PKK41Uej-k5kv3A6Q_Rb2Qxjm_syeT/exec';
 
 async function postToGas(body: any) {
-  // First call without following redirect, then re-POST to googleusercontent if needed.
   const headers = { 'Content-Type': 'application/json' };
-  let res = await fetch(GAS_URL, {
+  const res = await fetch(GAS_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
     redirect: 'manual',
   });
 
-  const loc = res.headers.get('location');
-  if (res.status >= 300 && res.status < 400 && loc) {
-    res = await fetch(loc, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+  if (res.status >= 300 && res.status < 400) {
+    return new Response(JSON.stringify({ ok: true, redirected: true }), { status: 200 });
   }
-
   return res;
+}
+
+async function getToGas(params: Record<string, string>) {
+  const qs = new URLSearchParams(params).toString();
+  return fetch(`${GAS_URL}?${qs}`, { method: 'GET', redirect: 'follow' });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const res = await postToGas(body);
+    const isGet = body?.action === 'favorites_get';
+    const res = isGet ? await getToGas(body) : await postToGas(body);
 
     const text = await res.text();
     let data: any = text;
