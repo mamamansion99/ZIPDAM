@@ -27,15 +27,6 @@ export default async function handler(req, res) {
   };
 
   try {
-    if (req.method === "GET") {
-      const qs = req.url.split("?")[1] || "";
-      const target = qs ? `${gasUrl}?${qs}` : gasUrl;
-      const response = await fetch(target, { method: "GET", redirect: "follow" });
-      const text = await response.text();
-      res.status(response.status).setHeader("content-type", "application/json").send(text);
-      return;
-    }
-
     if (req.method !== "POST") {
       res.status(405).json({ ok: false, error: "Method not allowed" });
       return;

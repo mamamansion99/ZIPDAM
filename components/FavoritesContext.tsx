@@ -28,12 +28,10 @@ const matchFavorite = (product: Product, fav: FavoriteItem) => {
 };
 
 async function callFavoritesApi(payload: any) {
-  const isGet = payload?.action === 'favorites_get';
-  const url = isGet ? `/api/favorites?${new URLSearchParams(payload).toString()}` : '/api/favorites';
-  const res = await fetch(url, {
-    method: isGet ? 'GET' : 'POST',
+  const res = await fetch('/api/favorites', {
+    method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: isGet ? undefined : JSON.stringify(payload),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.ok === false) {
