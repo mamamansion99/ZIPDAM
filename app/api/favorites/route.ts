@@ -12,22 +12,21 @@ async function postToGas(body: any) {
   });
 
   if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get('location');
+    if (loc) {
+      const follow = await fetch(loc, { method: 'GET' });
+      return follow;
+    }
     return new Response(JSON.stringify({ ok: true, redirected: true }), { status: 200 });
   }
   return res;
-}
-
-async function getToGas(params: Record<string, string>) {
-  const qs = new URLSearchParams(params).toString();
-  return fetch(`${GAS_URL}?${qs}`, { method: 'GET', redirect: 'follow' });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const isGet = body?.action === 'favorites_get';
-    const res = isGet ? await getToGas(body) : await postToGas(body);
+    const res = await postToGas(body);
 
     const text = await res.text();
     let data: any = text;
