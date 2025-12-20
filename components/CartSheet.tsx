@@ -373,8 +373,12 @@ export const CartSheet = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={() => setShowContactModal(false)}
           >
-            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <div
+              className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">
