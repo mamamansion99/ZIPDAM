@@ -2,6 +2,27 @@ import { NextResponse } from 'next/server';
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyGW57XZPWYbhOv5vv5EpFj4-rVJmJATFQKe2PKK41Uej-k5kv3A6Q_Rb2Qxjm_syeT/exec';
 
+async function postToGas(body: any) {
+  const headers = { 'Content-Type': 'application/json' };
+  let res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+    redirect: 'manual',
+  });
+
+  const loc = res.headers.get('location');
+  if (res.status >= 300 && res.status < 400 && loc) {
+    res = await fetch(loc, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+  }
+
+  return res;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -13,19 +34,13 @@ export async function POST(request: Request) {
 
     // Proxy the order to Google Apps Script
     // We wrap the payload in an action structure
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: 'createOrder',
-        payload: {
-          idToken,
-          cart,
-          timestamp: new Date().toISOString()
-        }
-      })
+    const res = await postToGas({
+      action: 'createOrder',
+      payload: {
+        idToken,
+        cart,
+        timestamp: new Date().toISOString()
+      }
     });
 
     if (!res.ok) {
