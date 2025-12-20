@@ -92,32 +92,46 @@ export const QuickOrderView: React.FC<QuickOrderViewProps> = ({ products }) => {
            <div className="text-zipdam-muted text-center py-4 text-sm">{TH.emptyFavorites}</div>
          ) : (
            <div className="space-y-3">
-              {favorites.map(fav => (
-                 <div key={fav.id} className="bg-zipdam-surface border border-zipdam-border p-3 rounded-2xl flex items-center justify-between shadow-sm hover:border-zipdam-gold/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                       {/* White Image Well with gray background for contrast in white theme */}
-                       <div className="w-12 h-12 rounded-lg bg-gray-50 p-0.5 shrink-0 border border-gray-100">
-                         <img src={`https://picsum.photos/seed/${fav.imageKey}/100/100`} className="w-full h-full object-cover rounded-md mix-blend-multiply" />
-                       </div>
-                       <div>
-                          <p className="font-semibold text-sm text-zipdam-text">{fav.name}</p>
-                          <p className="text-xs text-zipdam-muted">{fav.brand} • {fav.size}</p>
-                       </div>
-                    </div>
-                    <div className="flex gap-1.5">
-                       {[1, 2, 3].map(q => (
-                          <motion.button
-                             key={q}
-                             whileTap={tapScale}
-                             onClick={() => addToCart(fav, q)}
-                             className="w-8 h-8 rounded-lg bg-zipdam-surface2 border border-zipdam-border text-zipdam-text hover:bg-zipdam-gradient hover:text-white hover:border-transparent text-xs font-bold transition-all"
-                          >
-                             +{q}
-                          </motion.button>
-                       ))}
-                    </div>
-                 </div>
-              ))}
+              {favorites.map(fav => {
+                const cleanKey = (fav.imageKey || '').trim();
+                const fallback = `https://picsum.photos/seed/${cleanKey || 'zipdam'}/100/100`;
+                const imageSrc = cleanKey.startsWith('http') ? cleanKey : fallback;
+                return (
+                  <div key={fav.id} className="bg-zipdam-surface border border-zipdam-border p-3 rounded-2xl flex items-center justify-between shadow-sm hover:border-zipdam-gold/30 transition-colors">
+                     <div className="flex items-center gap-3">
+                        {/* White Image Well with gray background for contrast in white theme */}
+                        <div className="w-12 h-12 rounded-lg bg-gray-50 p-0.5 shrink-0 border border-gray-100">
+                          <img
+                            src={imageSrc}
+                            className="w-full h-full object-cover rounded-md mix-blend-multiply"
+                            onError={(e) => {
+                              if (e.currentTarget.src !== fallback) {
+                                e.currentTarget.src = fallback;
+                                e.currentTarget.onerror = null;
+                              }
+                            }}
+                          />
+                        </div>
+                        <div>
+                           <p className="font-semibold text-sm text-zipdam-text">{fav.name}</p>
+                           <p className="text-xs text-zipdam-muted">{fav.brand} • {fav.size}</p>
+                        </div>
+                     </div>
+                     <div className="flex gap-1.5">
+                        {[1, 2, 3].map(q => (
+                           <motion.button
+                              key={q}
+                              whileTap={tapScale}
+                              onClick={() => addToCart(fav, q)}
+                              className="w-8 h-8 rounded-lg bg-zipdam-surface2 border border-zipdam-border text-zipdam-text hover:bg-zipdam-gradient hover:text-white hover:border-transparent text-xs font-bold transition-all"
+                           >
+                              +{q}
+                           </motion.button>
+                        ))}
+                     </div>
+                  </div>
+                );
+              })}
            </div>
          )}
       </motion.div>
