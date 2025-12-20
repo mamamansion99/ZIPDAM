@@ -115,9 +115,25 @@ export const CartSheet = () => {
                <div className="text-center py-10 text-zipdam-muted">{TH.emptyCart}</div>
             ) : (
                items.map(item => (
-                  <div key={item.id} className="flex gap-4">
+                     <div key={item.id} className="flex gap-4">
                      <div className="w-20 h-20 rounded-xl bg-white border border-gray-100 p-1 flex-shrink-0">
-                        <img src={`https://picsum.photos/seed/${item.imageKey}/150/150`} className="w-full h-full object-cover rounded-lg mix-blend-multiply" />
+                        {(() => {
+                          const cleanKey = (item.imageKey || '').trim();
+                          const fallback = `https://picsum.photos/seed/${cleanKey || 'zipdam'}/150/150`;
+                          const imgSrc = cleanKey.startsWith('http') ? cleanKey : fallback;
+                          return (
+                            <img
+                              src={imgSrc}
+                              className="w-full h-full object-cover rounded-lg mix-blend-multiply"
+                              onError={(e) => {
+                                if (e.currentTarget.src !== fallback) {
+                                  e.currentTarget.src = fallback;
+                                  e.currentTarget.onerror = null;
+                                }
+                              }}
+                            />
+                          );
+                        })()}
                      </div>
                      <div className="flex-1 flex flex-col justify-between">
                         <div>
