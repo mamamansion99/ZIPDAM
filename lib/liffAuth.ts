@@ -12,6 +12,11 @@ export function setLiffAuth(auth: LiffAuth) {
   if (typeof window !== 'undefined') {
     // stash on window for easy access without prop drilling
     (window as any).__zipdamAuth = auth;
+    try {
+      window.dispatchEvent(new CustomEvent('zipdam-auth-changed', { detail: auth }));
+    } catch (_) {
+      // ignore if CustomEvent not available
+    }
   }
 }
 

@@ -43,6 +43,7 @@ async function callFavoritesApi(payload: any) {
 export function FavoritesProvider({ children }: { children?: React.ReactNode }) {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [authVersion, setAuthVersion] = useState(0);
 
   const getIdentity = () => {
     const auth = getLiffAuth();
@@ -83,6 +84,13 @@ export function FavoritesProvider({ children }: { children?: React.ReactNode }) 
 
   useEffect(() => {
     fetchFavorites();
+  }, [authVersion]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => setAuthVersion(v => v + 1);
+    window.addEventListener('zipdam-auth-changed', handler);
+    return () => window.removeEventListener('zipdam-auth-changed', handler);
   }, []);
 
   const isFavorite = useMemo(
