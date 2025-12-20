@@ -369,7 +369,7 @@ export const CartSheet = () => {
       <AnimatePresence>
         {showContactModal && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 pointer-events-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
