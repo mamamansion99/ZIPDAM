@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Product } from '../types';
 import { formatTHB, TH } from '../lib/i18n';
@@ -15,6 +15,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
   const { addToCart } = useCart();
   const isPromo = product.promoPrice && product.promoPrice > 0;
   const currentPrice = isPromo ? product.promoPrice! : product.price;
+  const cleanKey = useMemo(() => (product.imageKey || '').trim(), [product.imageKey]);
+  const fallback = `https://picsum.photos/seed/${product.imageKey || 'zipdam'}/600/600`;
+  const initialSrc = cleanKey.startsWith('http') ? cleanKey : (cleanKey ? fallback : `https://picsum.photos/seed/zipdam/600/600`);
+  const [imgSrc, setImgSrc] = useState(initialSrc);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -49,8 +53,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         <div className="bg-gray-50 border-b border-zipdam-border p-4">
           <div className="relative rounded-2xl overflow-hidden border border-gray-100">
             <img
-              src={`https://picsum.photos/seed/${product.imageKey}/600/600`}
+              src={imgSrc}
               alt={product.name}
+              onError={() => {
+                if (imgSrc !== fallback) setImgSrc(fallback);
+              }}
               className="w-full h-full object-cover"
             />
             {isPromo && (

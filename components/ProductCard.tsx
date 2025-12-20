@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Product } from '../types';
 import { cn } from '../lib/tokens';
@@ -17,6 +17,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
   
   const currentPrice = product.promoPrice && product.promoPrice > 0 ? product.promoPrice : product.price;
   const isPromo = product.promoPrice && product.promoPrice > 0;
+  const cleanKey = useMemo(() => (product.imageKey || '').trim(), [product.imageKey]);
+  const fallback = `https://picsum.photos/seed/${product.imageKey || 'zipdam'}/300/300`;
+  const initialSrc = cleanKey.startsWith('http') ? cleanKey : (cleanKey ? fallback : `https://picsum.photos/seed/zipdam/300/300`);
+  const [imgSrc, setImgSrc] = useState(initialSrc);
 
   return (
     <motion.div 
@@ -36,8 +40,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            src={`https://picsum.photos/seed/${product.imageKey}/300/300`} 
+            src={imgSrc} 
             alt={product.name}
+            onError={() => {
+              if (imgSrc !== fallback) setImgSrc(fallback);
+            }}
             className="w-full h-full object-cover object-center mix-blend-multiply"
         />
       </div>
