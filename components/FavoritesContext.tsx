@@ -44,15 +44,32 @@ export function FavoritesProvider({ children }: { children?: React.ReactNode }) 
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchFavorites = async () => {
+  const getIdentity = () => {
     const auth = getLiffAuth();
-    if (!auth?.idToken && !auth?.lineUserId) return;
+    let lineUserId = auth.lineUserId || '';
+    // Fallback guest id persisted in localStorage
+    if (typeof window !== 'undefined' && !lineUserId) {
+      const key = 'zipdam_guest_id';
+      const existing = window.localStorage.getItem(key);
+      if (existing) {
+        lineUserId = existing;
+      } else {
+        lineUserId = `GUEST-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        window.localStorage.setItem(key, lineUserId);
+      }
+    }
+    return { idToken: auth.idToken || '', lineUserId };
+  };
+
+  const fetchFavorites = async () => {
+    const identity = getIdentity();
+    if (!identity.lineUserId && !identity.idToken) return;
     setLoading(true);
     try {
       const data = await callFavoritesApi({
         action: 'favorites_get',
-        idToken: auth.idToken || '',
-        lineUserId: auth.lineUserId || '',
+        idToken: identity.idToken,
+        lineUserId: identity.lineUserId,
       });
       if (Array.isArray(data.favorites)) {
         setFavorites(data.favorites);
@@ -74,11 +91,8 @@ export function FavoritesProvider({ children }: { children?: React.ReactNode }) 
   );
 
   const toggleFavorite = async (product: Product) => {
-    const auth = getLiffAuth();
-    if (!auth?.idToken && !auth?.lineUserId) {
-      console.warn('Missing auth for favorites');
-      return;
-    }
+    const identity = getIdentity();
+    if (!identity.lineUserId && !identity.idToken) return;
     const item: FavoriteItem = {
       SKU: product.id,
       Brand: product.brand,
@@ -95,8 +109,8 @@ export function FavoritesProvider({ children }: { children?: React.ReactNode }) 
     try {
       await callFavoritesApi({
         action: currentlyFav ? 'favorites_remove' : 'favorites_add',
-        idToken: auth.idToken || '',
-        lineUserId: auth.lineUserId || '',
+        idToken: identity.idToken,
+        lineUserId: identity.lineUserId,
         item,
       });
     } catch (err) {
