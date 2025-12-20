@@ -41,6 +41,10 @@ export default async function handler(req, res) {
       idToken: body.idToken || "",
       lineUserId: body.lineUserId || "",
       displayName: body.displayName || "",
+      store: body.store || "",
+      area: body.area || body.soi || "",
+      phone: body.phone || "",
+      address: body.address || body.defaultAddress || "",
       cart,
     };
 
