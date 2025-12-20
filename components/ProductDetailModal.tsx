@@ -49,20 +49,44 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         exit={{ opacity: 0, y: 30, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       >
-        {/* Close */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 border border-zipdam-border flex items-center justify-center shadow-sm text-zipdam-muted hover:text-zipdam-text pointer-events-auto"
-          aria-label="Close"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Top controls */}
+        <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(product);
+            }}
+            className={cn(
+              "w-10 h-10 rounded-full border flex items-center justify-center bg-white/95 backdrop-blur shadow-sm transition-colors",
+              isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/60" : "text-zipdam-muted border-zipdam-border hover:text-zipdam-gold"
+            )}
+            aria-label="Toggle favorite"
+          >
+            {isFavorite(product) ? (
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="w-10 h-10 rounded-full bg-white/95 border border-zipdam-border flex items-center justify-center shadow-sm text-zipdam-muted hover:text-zipdam-text pointer-events-auto"
+            aria-label="Close"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         {/* Image */}
         <div className="bg-gray-50 border-b border-zipdam-border p-4">
@@ -80,28 +104,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 {TH.promo}
               </div>
             )}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavorite(product);
-              }}
-              className={cn(
-                "absolute top-3 right-3 w-9 h-9 rounded-full border flex items-center justify-center bg-white/90 backdrop-blur-sm shadow-sm",
-                isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/50" : "text-zipdam-muted border-zipdam-border"
-              )}
-              aria-label="Toggle favorite"
-            >
-              {isFavorite(product) ? (
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
-                </svg>
-              )}
-            </button>
           </div>
         </div>
 

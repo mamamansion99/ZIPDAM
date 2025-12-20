@@ -44,16 +44,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
           toggleFavorite(product);
         }}
         className={cn(
-          "absolute top-2 right-2 z-10 w-8 h-8 rounded-full border flex items-center justify-center bg-white/90 backdrop-blur-sm shadow-sm",
-          isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/50" : "text-zipdam-muted border-zipdam-border"
+          "absolute top-2 right-2 z-10 w-9 h-9 rounded-full border flex items-center justify-center bg-white/95 backdrop-blur shadow-sm transition-colors",
+          isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/50" : "text-zipdam-muted border-zipdam-border hover:text-zipdam-gold"
         )}
       >
         {isFavorite(product) ? (
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+          <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24">
             <path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
           </svg>
         ) : (
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
           </svg>
         )}
