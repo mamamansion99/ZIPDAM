@@ -22,6 +22,14 @@ async function postToGas(body: any) {
   return res;
 }
 
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const qs = searchParams.toString();
+  const res = await fetch(qs ? `${GAS_URL}?${qs}` : GAS_URL, { method: 'GET', redirect: 'follow' });
+  const text = await res.text();
+  return new Response(text, { status: res.status, headers: { 'content-type': 'application/json' } });
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

@@ -1,9 +1,4 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ ok: false, error: "Method not allowed" });
-    return;
-  }
-
   const gasUrl = process.env.GAS_URL || "https://script.google.com/macros/s/AKfycbyGW57XZPWYbhOv5vv5EpFj4-rVJmJATFQKe2PKK41Uej-k5kv3A6Q_Rb2Qxjm_syeT/exec";
   if (!gasUrl) {
     res.status(500).json({ ok: false, error: "Missing GAS_URL env" });
@@ -32,6 +27,20 @@ export default async function handler(req, res) {
   };
 
   try {
+    if (req.method === "GET") {
+      const qs = req.url.split("?")[1] || "";
+      const target = qs ? `${gasUrl}?${qs}` : gasUrl;
+      const response = await fetch(target, { method: "GET", redirect: "follow" });
+      const text = await response.text();
+      res.status(response.status).setHeader("content-type", "application/json").send(text);
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Method not allowed" });
+      return;
+    }
+
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
     const result = await postToGas(gasUrl, body);
