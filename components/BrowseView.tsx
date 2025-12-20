@@ -37,19 +37,21 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
   };
 
   const sizeOptions = useMemo(() => {
-    const unique = new Set(
-      products
-        .filter(p => p.type === selectedType)
-        .map(p => p.size)
-    );
-    return ['ALL', ...Array.from(unique).sort((a, b) => {
+    const scoped = products.filter(p => {
+      const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
+      const typeMatch = p.type === selectedType;
+      return brandMatch && typeMatch;
+    });
+    const unique = new Set(scoped.map(p => p.size));
+    const sorted = Array.from(unique).sort((a, b) => {
       const getNum = (s: string) => {
         const m = s.match(/([0-9]+(?:\.[0-9]+)?)/);
         return m ? parseFloat(m[1]) : Number.POSITIVE_INFINITY;
       };
       return getNum(a) - getNum(b);
-    })];
-  }, [products, selectedType]);
+    });
+    return ['ALL', ...sorted];
+  }, [products, selectedType, selectedBrand]);
 
   const filteredProducts = products.filter(p => {
     const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
