@@ -12,30 +12,27 @@ export default async function handler(req, res) {
 
   const postToGas = async (url, payload) => {
     const headers = { "content-type": "application/json" };
-    let response = await fetch(url, {
+    const response = await fetch(url, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
-      redirect: "manual",
+      redirect: "manual", // do not auto-follow; a 302 still means GAS ran
     });
 
-    const loc = response.headers.get("location");
-    if (response.status >= 300 && response.status < 400 && loc) {
-      response = await fetch(loc, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
+    if (response.status >= 300 && response.status < 400) {
+      // Treat redirect as success (Apps Script already executed doPost)
+      return { status: 200, text: JSON.stringify({ ok: true, redirected: true }) };
     }
-    return response;
+
+    const text = await response.text();
+    return { status: response.status, text };
   };
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-    const response = await postToGas(gasUrl, body);
-    const text = await response.text();
-    res.status(response.status).setHeader("content-type", "application/json").send(text);
+    const result = await postToGas(gasUrl, body);
+    res.status(result.status).setHeader("content-type", "application/json").send(result.text);
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
