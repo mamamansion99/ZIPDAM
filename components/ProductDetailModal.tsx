@@ -21,7 +21,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
   const [imgSrc, setImgSrc] = useState(initialSrc);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
+    >
       {/* Backdrop */}
       <motion.div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -41,8 +49,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
       >
         {/* Close */}
         <button
-          onClick={onClose}
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 border border-zipdam-border flex items-center justify-center shadow-sm text-zipdam-muted hover:text-zipdam-text"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 border border-zipdam-border flex items-center justify-center shadow-sm text-zipdam-muted hover:text-zipdam-text pointer-events-auto"
+          aria-label="Close"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
