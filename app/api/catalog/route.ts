@@ -1,17 +1,69 @@
 import { NextResponse } from 'next/server';
 import { MOCK_PRODUCTS } from '../../../lib/tokens';
 
-export async function GET() {
-  const gasUrl = process.env.GAS_URL;
-  if (!gasUrl) {
-    return NextResponse.json({ ok: false, error: 'Missing GAS_URL env' }, { status: 500 });
-  }
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxoHkWuWwQW31RtIj3ZxG8adm6qQhm0bycLyrWZvfPYXebG_qvKzeaCtY6PjujiXflI/exec';
 
+const normalizeProduct = (item: any) => {
+  if (!item) return null;
+
+  const brand = item.Brand || item.brand || 'Unknown';
+  const name = item.Name || item.name || item.SKU || 'สินค้า';
+  const sku = item.SKU || item.id || `${brand}-${name}`.replace(/\s+/g, '-');
+
+  const size = (() => {
+    const mm = item.mm;
+    if (mm && mm !== '-') {
+      const mmStr = String(mm).trim();
+      return mmStr.includes('mm') ? mmStr : `${mmStr}mm`;
+    }
+    if (item.Size) return String(item.Size);
+    return '';
+  })();
+
+  const packSize = (() => {
+    const p = item.pack;
+    const num = Number(p);
+    if (Number.isFinite(num)) return num;
+    return 1;
+  })();
+
+  const price = Number(item.final_price ?? item.price ?? 0) || 0;
+  const promoPrice = item.promo_price != null ? Number(item.promo_price) : undefined;
+
+  const type = (() => {
+    const t = item.Type || item.type || '';
+    const s = item.Size || '';
+    const source = `${t} ${s}`.toLowerCase();
+    return source.includes('gel') ? 'Gel' : 'Condom';
+  })();
+
+  const features = Array.isArray(item.Feature)
+    ? item.Feature
+    : Array.isArray(item.features)
+    ? item.features
+    : [];
+
+  const imageKey = item.image_key || item.imageKey || '';
+
+  return {
+    id: sku,
+    brand,
+    name,
+    size,
+    packSize,
+    price,
+    promoPrice,
+    imageKey,
+    type,
+    features,
+  };
+};
+
+export async function GET() {
   try {
-    // Fetch from Google Apps Script
-    // We add action=getCatalog to distinguish the request type
-    const res = await fetch(`${gasUrl}?action=getCatalog`, { 
-      next: { revalidate: 60 } // Cache for 60 seconds
+    // Google Apps Script supports action=catalog
+    const res = await fetch(`${GAS_URL}?action=catalog`, {
+      next: { revalidate: 60 },
     } as any);
 
     if (!res.ok) {
@@ -19,19 +71,25 @@ export async function GET() {
     }
 
     const data = await res.json();
-    
-    // Ensure we return the products array. 
-    // If GAS returns { products: [...] } we use it, otherwise fall back to MOCK
-    if (data && data.products) {
-      return NextResponse.json(data);
+
+    const rawProducts = Array.isArray(data?.products)
+      ? data.products
+      : Array.isArray(data?.catalog)
+      ? data.catalog
+      : null;
+
+    if (rawProducts) {
+      const normalized = rawProducts.map(normalizeProduct).filter(Boolean);
+      return NextResponse.json({
+        ok: data?.ok !== false,
+        products: normalized,
+        catalog: data?.catalog ?? normalized,
+      });
     }
-    
+
     return NextResponse.json({ products: MOCK_PRODUCTS });
   } catch (error) {
-    console.error("Catalog Fetch Error:", error);
-    // Fallback to mock data so the app doesn't break if GAS is down/unreachable
-    return NextResponse.json({
-      products: MOCK_PRODUCTS
-    });
+    console.error('Catalog Fetch Error:', error);
+    return NextResponse.json({ products: MOCK_PRODUCTS });
   }
 }

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 
-async function postToGas(gasUrl: string, body: any) {
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxoHkWuWwQW31RtIj3ZxG8adm6qQhm0bycLyrWZvfPYXebG_qvKzeaCtY6PjujiXflI/exec';
+
+async function postToGas(body: any) {
   const headers = { 'Content-Type': 'application/json' };
-  let res = await fetch(gasUrl, {
+  let res = await fetch(GAS_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -23,11 +25,6 @@ async function postToGas(gasUrl: string, body: any) {
 
 export async function POST(request: Request) {
   try {
-    const gasUrl = process.env.GAS_URL;
-    if (!gasUrl) {
-      return NextResponse.json({ ok: false, error: 'Missing GAS_URL env' }, { status: 500 });
-    }
-
     const body = await request.json();
     const { idToken, cart } = body;
 
@@ -37,7 +34,7 @@ export async function POST(request: Request) {
 
     // Proxy the order to Google Apps Script
     // We wrap the payload in an action structure
-    const res = await postToGas(gasUrl, {
+    const res = await postToGas({
       action: 'order',
       payload: {
         idToken,

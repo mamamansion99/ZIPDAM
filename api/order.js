@@ -4,11 +4,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const gasUrl = process.env.GAS_URL;
-  if (!gasUrl) {
-    res.status(500).json({ ok: false, error: "Missing GAS_URL env" });
-    return;
-  }
+  const gasUrl = "https://script.google.com/macros/s/AKfycbxoHkWuWwQW31RtIj3ZxG8adm6qQhm0bycLyrWZvfPYXebG_qvKzeaCtY6PjujiXflI/exec";
 
   const postToGas = async (url, payload) => {
     const headers = { "content-type": "application/json" };
