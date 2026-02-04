@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycby7Os2ZdVJoBCCa88xc9ukIhxn6lT_5sPKLJxj_4c0wSgfw2_KCdhnprbrYrJ9Tm9h0/exec';
-
-async function postToGas(body: any) {
+async function postToGas(gasUrl: string, body: any) {
   const headers = { 'Content-Type': 'application/json' };
-  const res = await fetch(GAS_URL, {
+  const res = await fetch(gasUrl, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -24,9 +22,14 @@ async function postToGas(body: any) {
 
 export async function POST(request: Request) {
   try {
+    const gasUrl = process.env.GAS_URL;
+    if (!gasUrl) {
+      return NextResponse.json({ ok: false, error: 'Missing GAS_URL env' }, { status: 500 });
+    }
+
     const body = await request.json();
 
-    const res = await postToGas(body);
+    const res = await postToGas(gasUrl, body);
 
     const text = await res.text();
     let data: any = text;

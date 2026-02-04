@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { MOCK_PRODUCTS } from '../../../lib/tokens';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycby7Os2ZdVJoBCCa88xc9ukIhxn6lT_5sPKLJxj_4c0wSgfw2_KCdhnprbrYrJ9Tm9h0/exec';
-
 export async function GET() {
+  const gasUrl = process.env.GAS_URL;
+  if (!gasUrl) {
+    return NextResponse.json({ ok: false, error: 'Missing GAS_URL env' }, { status: 500 });
+  }
+
   try {
     // Fetch from Google Apps Script
     // We add action=getCatalog to distinguish the request type
-    const res = await fetch(`${GAS_URL}?action=getCatalog`, { 
+    const res = await fetch(`${gasUrl}?action=getCatalog`, { 
       next: { revalidate: 60 } // Cache for 60 seconds
     } as any);
 

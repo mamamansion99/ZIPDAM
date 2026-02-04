@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const gasUrl = process.env.GAS_URL || "https://script.google.com/macros/s/AKfycby7Os2ZdVJoBCCa88xc9ukIhxn6lT_5sPKLJxj_4c0wSgfw2_KCdhnprbrYrJ9Tm9h0/exec";
+  const gasUrl = process.env.GAS_URL;
   if (!gasUrl) {
     res.status(500).json({ ok: false, error: "Missing GAS_URL env" });
     return;
