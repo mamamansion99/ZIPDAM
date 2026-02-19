@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSSEtvyW2inxLsd1EZtNd0iPT08Ipq1LWPXod10udLZliSK691KJ0WKN9ofcZoeiwq/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz7e8urAY_67A-NkV6sO6BLVGJWt1s8ZP9rNqvNYzB6rluvYeaZVeBMdtFAfEV7celD/exec';
 
 async function postToGas(body: any) {
   const headers = { 'Content-Type': 'application/json' };
