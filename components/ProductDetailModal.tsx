@@ -15,6 +15,7 @@ interface ProductDetailModalProps {
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose }) => {
   const { addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const favoriteActive = isFavorite(product);
   const isPromo = product.promoPrice && product.promoPrice > 0;
   const currentPrice = isPromo ? product.promoPrice! : product.price;
   const cleanKey = useMemo(() => (product.imageKey || '').trim(), [product.imageKey]);
@@ -51,28 +52,60 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
       >
         {/* Top controls */}
         <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
-          <button
+          <motion.button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleFavorite(product);
             }}
+            whileTap={{ scale: 0.9 }}
+            animate={favoriteActive ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             className={cn(
-              "w-10 h-10 rounded-full border flex items-center justify-center bg-white/95 backdrop-blur shadow-sm transition-colors",
-              isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/60" : "text-zipdam-muted border-zipdam-border hover:text-zipdam-gold"
+              "relative w-10 h-10 rounded-full border flex items-center justify-center bg-white/95 backdrop-blur shadow-sm transition-colors",
+              favoriteActive ? "text-zipdam-gold border-zipdam-gold/60" : "text-zipdam-muted border-zipdam-border hover:text-zipdam-gold"
             )}
             aria-label="Toggle favorite"
           >
-            {isFavorite(product) ? (
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A5.97 5.97 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
-                <path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A5.97 5.97 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
-              </svg>
+            {favoriteActive && (
+              <motion.span
+                aria-hidden="true"
+                className="absolute inset-0 rounded-full border border-zipdam-gold/60"
+                initial={{ scale: 0.7, opacity: 0.8 }}
+                animate={{ scale: 1.45, opacity: 0 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              />
             )}
-          </button>
+            {favoriteActive ? (
+              <motion.svg
+                key="heart-on"
+                initial={{ scale: 0.75, opacity: 0.6 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
+                className="w-5 h-5 fill-current"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A5.97 5.97 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
+              </motion.svg>
+            ) : (
+              <motion.svg
+                key="heart-off"
+                initial={{ scale: 0.75, opacity: 0.6 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                aria-hidden="true"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A5.97 5.97 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
+              </motion.svg>
+            )}
+          </motion.button>
           <button
             type="button"
             onClick={(e) => {
