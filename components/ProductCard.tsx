@@ -31,7 +31,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       className="bg-white rounded-2xl p-3 shadow-sm border border-zipdam-border hover:border-zipdam-gold/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-zipdam-gold/10 transition-all duration-300 flex flex-col h-full relative overflow-hidden group cursor-pointer"
     >
       {isPromo && (
-        <div className="absolute top-2 left-2 z-10 bg-zipdam-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+        <div className="absolute top-3 left-3 z-10 bg-zipdam-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
           {TH.promo}
         </div>
       )}
@@ -44,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
           toggleFavorite(product);
         }}
         className={cn(
-          "absolute top-2 right-2 z-10 w-9 h-9 rounded-full border flex items-center justify-center bg-white/95 backdrop-blur shadow-sm transition-colors",
+          "absolute top-3 right-3 z-10 w-9 h-9 rounded-full border flex items-center justify-center bg-white/95 backdrop-blur shadow-sm transition-colors",
           isFavorite(product) ? "text-zipdam-gold border-zipdam-gold/50" : "text-zipdam-muted border-zipdam-border hover:text-zipdam-gold"
         )}
       >
