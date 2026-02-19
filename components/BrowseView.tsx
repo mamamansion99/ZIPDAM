@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containerVariants, tapScale } from '../lib/motion';
 import { ProductCard } from './ProductCard';
@@ -36,22 +36,40 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
     );
   };
 
-  const sizeOptions = useMemo(() => {
-    const scoped = products.filter(p => {
+  const scopedProducts = useMemo(() => {
+    return products.filter(p => {
       const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
       const typeMatch = p.type === selectedType;
       return brandMatch && typeMatch;
     });
-    const unique = new Set(scoped.map(p => p.size));
-    const sorted = Array.from(unique).sort((a, b) => {
+  }, [products, selectedType, selectedBrand]);
+
+  const sizeValues = useMemo(() => {
+    const unique = new Set(scopedProducts.map(p => p.size));
+    return Array.from(unique).sort((a, b) => {
       const getNum = (s: string) => {
         const m = s.match(/([0-9]+(?:\.[0-9]+)?)/);
         return m ? parseFloat(m[1]) : Number.POSITIVE_INFINITY;
       };
       return getNum(a) - getNum(b);
     });
-    return ['ALL', ...sorted];
-  }, [products, selectedType, selectedBrand]);
+  }, [scopedProducts]);
+
+  const sizeOptions = useMemo(() => {
+    return ['ALL', ...sizeValues];
+  }, [sizeValues]);
+
+  const showSizeFilter = !(selectedType === 'Gel' && sizeValues.length <= 1);
+
+  useEffect(() => {
+    if (!showSizeFilter && selectedSize !== 'ALL') {
+      setSelectedSize('ALL');
+      return;
+    }
+    if (showSizeFilter && !sizeOptions.includes(selectedSize)) {
+      setSelectedSize('ALL');
+    }
+  }, [showSizeFilter, selectedSize, sizeOptions]);
 
   const filteredProducts = products.filter(p => {
     const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
@@ -109,28 +127,32 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
             ))}
          </div>
          
-         <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
+         {showSizeFilter && (
+           <>
+             <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
 
-         {/* Size filter */}
-         <div className="flex items-center gap-2 shrink-0">
-           <span className="text-xs font-semibold text-zipdam-muted">{TH.filterSize}</span>
-           <div className="flex gap-1">
-             {sizeOptions.map(size => (
-               <button
-                 key={size}
-                 onClick={() => setSelectedSize(size)}
-                 className={cn(
-                   "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap",
-                   selectedSize === size
-                     ? "bg-zipdam-gold/10 border-zipdam-gold text-zipdam-gold"
-                     : "bg-white border-zipdam-border text-zipdam-muted hover:border-zipdam-muted"
-                 )}
-               >
-                 {size === 'ALL' ? TH.filterSizeAll : size}
-               </button>
-             ))}
-           </div>
-         </div>
+             {/* Size filter */}
+             <div className="flex items-center gap-2 shrink-0">
+               <span className="text-xs font-semibold text-zipdam-muted">{TH.filterSize}</span>
+               <div className="flex gap-1">
+                 {sizeOptions.map(size => (
+                   <button
+                     key={size}
+                     onClick={() => setSelectedSize(size)}
+                     className={cn(
+                       "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap",
+                       selectedSize === size
+                         ? "bg-zipdam-gold/10 border-zipdam-gold text-zipdam-gold"
+                         : "bg-white border-zipdam-border text-zipdam-muted hover:border-zipdam-muted"
+                     )}
+                   >
+                     {size === 'ALL' ? TH.filterSizeAll : size}
+                   </button>
+                 ))}
+               </div>
+             </div>
+           </>
+         )}
 
          <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
 
