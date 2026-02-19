@@ -25,11 +25,21 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const requestedAction = String(body.action || '').trim();
+    const action = requestedAction === 'customer_profile_set' ? 'customer_profile_set' : 'customer_profile';
+
     const payload = {
-      action: 'customer_profile',
+      action,
       idToken: body.idToken || '',
       lineUserId: body.lineUserId || '',
     };
+    if (action === 'customer_profile_set') {
+      payload.displayName = body.displayName || '';
+      payload.store = body.store || body.storeName || '';
+      payload.area = body.area || body.soi || '';
+      payload.phone = body.phone || '';
+      payload.address = body.address || body.defaultAddress || '';
+    }
 
     const result = await postToGas(gasUrl, payload);
     let data = {};

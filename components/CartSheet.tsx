@@ -32,6 +32,7 @@ export const CartSheet = () => {
   });
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  const [isSavingContact, setIsSavingContact] = useState(false);
 
   // load cached + server profile
   useEffect(() => {
@@ -84,6 +85,69 @@ export const CartSheet = () => {
 
   const missingContact = () =>
     !contactInfo.store || !contactInfo.area || !contactInfo.phone;
+
+  const saveContactProfile = async () => {
+    if (isSavingContact) return;
+    setIsSavingContact(true);
+    try {
+      const auth = getLiffAuth();
+      let idToken = auth.idToken || "";
+      let lineUserId = auth.lineUserId || "";
+      let displayName = auth.displayName || "";
+
+      // Refresh LIFF identity if available.
+      try {
+        const liff = (await import("@line/liff")).default;
+        if (liff?.isLoggedIn && liff.isLoggedIn()) {
+          const t = liff.getIDToken && liff.getIDToken();
+          if (t) idToken = t;
+          if (liff.getProfile) {
+            const p = await liff.getProfile();
+            if (p?.userId) lineUserId = p.userId;
+            if (p?.displayName) displayName = p.displayName;
+          }
+        }
+      } catch (_) {
+        // ignore if not in LIFF context
+      }
+
+      const res = await fetch("/api/customer-profile", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "customer_profile_set",
+          idToken,
+          lineUserId,
+          displayName,
+          store: contactInfo.store,
+          area: contactInfo.area,
+          phone: contactInfo.phone,
+          address: contactInfo.address,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || "บันทึกข้อมูลไม่สำเร็จ");
+      }
+
+      const profile = data.profile || {};
+      const nextInfo = {
+        store: profile.store || contactInfo.store || "",
+        area: profile.area || contactInfo.area || "",
+        phone: profile.phone || contactInfo.phone || "",
+        address: profile.address || profile.defaultAddress || contactInfo.address || "",
+      };
+      setContactInfo(nextInfo);
+      persistContact(nextInfo);
+      setShowContactModal(false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setTimeout(() => alert(`บันทึกข้อมูลไม่สำเร็จ: ${msg}`), 0);
+    } finally {
+      setIsSavingContact(false);
+    }
+  };
 
   const performCheckout = async () => {
     if (!items.length || isSubmitting) return;
@@ -476,22 +540,21 @@ export const CartSheet = () => {
                 <button
                   className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold"
                   onClick={() => setShowContactModal(false)}
+                  disabled={isSavingContact}
                 >
                   ยกเลิก
                 </button>
                 <button
                   className="flex-1 h-12 rounded-xl bg-zipdam-gradient text-white font-bold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={
+                    isSavingContact ||
                     !contactInfo.store ||
                     !contactInfo.area ||
                     !contactInfo.phone
                   }
-                  onClick={() => {
-                    persistContact(contactInfo);
-                    setShowContactModal(false);
-                  }}
+                  onClick={saveContactProfile}
                 >
-                  บันทึก
+                  {isSavingContact ? "กำลังบันทึก..." : "บันทึก"}
                 </button>
               </div>
             </div>
