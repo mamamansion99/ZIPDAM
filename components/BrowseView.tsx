@@ -25,27 +25,49 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
   const [selectedSize, setSelectedSize] = useState('ALL');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Derived unique features from the current product set
-  const allFeatures = useMemo(() => {
-    return Array.from(new Set(products.flatMap(p => p.features)));
-  }, [products]);
-
   const toggleFeature = (f: string) => {
     setSelectedFeatures(prev => 
       prev.includes(f) ? prev.filter(i => i !== f) : [...prev, f]
     );
   };
 
-  const scopedProducts = useMemo(() => {
+  const brandScopedProducts = useMemo(() => {
     return products.filter(p => {
       const brandMatch = selectedBrand === 'All' || p.brand === selectedBrand;
-      const typeMatch = p.type === selectedType;
-      return brandMatch && typeMatch;
+      return brandMatch;
     });
-  }, [products, selectedType, selectedBrand]);
+  }, [products, selectedBrand]);
 
-  const sizeValues = useMemo(() => {
-    const unique = new Set(scopedProducts.map(p => p.size));
+  const availableTypes = useMemo(() => {
+    return Array.from(new Set(brandScopedProducts.map(p => p.type)));
+  }, [brandScopedProducts]);
+
+  const showTypeFilter = availableTypes.length > 1;
+
+  useEffect(() => {
+    if (availableTypes.length === 0) return;
+    if (!availableTypes.includes(selectedType)) {
+      setSelectedType(availableTypes[0]);
+    }
+  }, [availableTypes, selectedType]);
+
+  const scopedProducts = useMemo(() => {
+    return brandScopedProducts.filter(p => p.type === selectedType);
+  }, [brandScopedProducts, selectedType]);
+
+  const allFeatures = useMemo(() => {
+    return Array.from(new Set(scopedProducts.flatMap(p => p.features)))
+      .map(f => (f || '').trim())
+      .filter(Boolean)
+      .filter(f => f.toLowerCase() !== 'gel');
+  }, [scopedProducts]);
+
+  const rawSizeValues = useMemo(() => {
+    const unique = new Set(
+      scopedProducts
+        .map(p => (p.size || '').trim())
+        .filter(Boolean)
+    );
     return Array.from(unique).sort((a, b) => {
       const getNum = (s: string) => {
         const m = s.match(/([0-9]+(?:\.[0-9]+)?)/);
@@ -55,11 +77,29 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
     });
   }, [scopedProducts]);
 
+  const sizeValues = useMemo(() => {
+    if (selectedType !== 'Gel') return rawSizeValues;
+    return rawSizeValues.filter(value => {
+      const normalized = value.trim().toLowerCase();
+      return ![
+        'gel',
+        'เจล',
+        'lube',
+        'lubricant',
+        'water based lubricant',
+        'water-based lubricant',
+        '-',
+        'n/a',
+        'na',
+      ].includes(normalized);
+    });
+  }, [rawSizeValues, selectedType]);
+
   const sizeOptions = useMemo(() => {
     return ['ALL', ...sizeValues];
   }, [sizeValues]);
 
-  const showSizeFilter = !(selectedType === 'Gel' && sizeValues.length <= 1);
+  const showSizeFilter = selectedType !== 'Gel' || sizeValues.length > 1;
 
   useEffect(() => {
     if (!showSizeFilter && selectedSize !== 'ALL') {
@@ -109,27 +149,34 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
 
       {/* Type & Features Filter */}
       <div className="px-4 flex gap-2 overflow-x-auto no-scrollbar items-center">
-         {/* Type Toggle */}
-         <div className="flex bg-zipdam-surface2 p-1 rounded-lg shrink-0 border border-zipdam-border">
-            {TYPES.map(type => (
-               <button
-                  key={type}
-                  onClick={() => setSelectedType(type)}
-                  className={cn(
-                     "px-3 py-1 text-xs font-semibold rounded-md transition-all",
-                     selectedType === type 
-                       ? "bg-zipdam-surface text-zipdam-gold shadow-sm ring-1 ring-black/5" 
-                       : "text-zipdam-muted hover:text-zipdam-text"
-                  )}
-               >
-                  {TYPE_MAP[type] || type}
-               </button>
-            ))}
-         </div>
-         
+         {showTypeFilter && (
+           <>
+             {/* Type Toggle */}
+             <div className="flex bg-zipdam-surface2 p-1 rounded-lg shrink-0 border border-zipdam-border">
+                {TYPES.filter(type => availableTypes.includes(type as 'Condom' | 'Gel')).map(type => (
+                   <button
+                      key={type}
+                      onClick={() => setSelectedType(type)}
+                      className={cn(
+                         "px-3 py-1 text-xs font-semibold rounded-md transition-all",
+                         selectedType === type 
+                           ? "bg-zipdam-surface text-zipdam-gold shadow-sm ring-1 ring-black/5" 
+                           : "text-zipdam-muted hover:text-zipdam-text"
+                      )}
+                   >
+                      {TYPE_MAP[type] || type}
+                   </button>
+                ))}
+             </div>
+           </>
+         )}
+
+         {showTypeFilter && showSizeFilter && (
+           <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
+         )}
+
          {showSizeFilter && (
            <>
-             <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
 
              {/* Size filter */}
              <div className="flex items-center gap-2 shrink-0">
@@ -154,7 +201,9 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
            </>
          )}
 
-         <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
+         {allFeatures.length > 0 && (showTypeFilter || showSizeFilter) && (
+           <div className="w-[1px] bg-zipdam-border mx-1 h-6 self-center"></div>
+         )}
 
          {/* Features Chips */}
          {allFeatures.map(feat => (
