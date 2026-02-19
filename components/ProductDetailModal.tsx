@@ -64,12 +64,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             aria-label="Toggle favorite"
           >
             {isFavorite(product) ? (
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A5.97 5.97 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <path strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+                <path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A5.97 5.97 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
               </svg>
             )}
           </button>
