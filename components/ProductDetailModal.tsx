@@ -64,11 +64,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             aria-label="Toggle favorite"
           >
             {isFavorite(product) ? (
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 overflow-visible fill-current" viewBox="-1 -1 26 26">
                 <path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <svg className="w-5 h-5 overflow-visible" viewBox="-1 -1 26 26" fill="none" stroke="currentColor">
                 <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-2.54A5 5 0 0 1 19 11c0 5.65-7 10-7 10z" />
               </svg>
             )}
