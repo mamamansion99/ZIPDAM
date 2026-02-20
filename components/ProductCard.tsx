@@ -109,9 +109,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
 
       {/* Content */}
       <div className="flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-1">
+        <div className="flex justify-between items-start gap-2 mb-1">
           <p className="text-xs text-zipdam-muted font-medium uppercase tracking-wide">{product.brand}</p>
-          <span className="text-[10px] text-zipdam-muted bg-zipdam-surface2 px-1.5 rounded border border-zipdam-border">{product.size}</span>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className="text-[10px] text-zipdam-muted bg-zipdam-surface2 px-1.5 rounded border border-zipdam-border">
+              {product.size}
+            </span>
+            {product.packSize > 0 && (
+              <span className="text-[10px] font-medium text-zipdam-muted bg-zipdam-surface2 px-1.5 rounded border border-zipdam-border">
+                {product.packSize} ชิ้น
+              </span>
+            )}
+          </div>
         </div>
         
         <h3 className="font-semibold text-zipdam-text text-sm leading-tight mb-1 line-clamp-2 min-h-[2.5em]">

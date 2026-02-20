@@ -3,6 +3,25 @@ import { MOCK_PRODUCTS } from '../../../lib/tokens';
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxoHkWuWwQW31RtIj3ZxG8adm6qQhm0bycLyrWZvfPYXebG_qvKzeaCtY6PjujiXflI/exec';
 
+const parsePackSize = (value: any) => {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+
+  const text = String(value ?? '').trim();
+  if (!text) return 1;
+
+  const direct = Number(text);
+  if (Number.isFinite(direct) && direct > 0) return Math.round(direct);
+
+  const match = text.match(/(\d+(?:\.\d+)?)/);
+  if (!match) return 1;
+
+  const parsed = Number(match[1]);
+  if (Number.isFinite(parsed) && parsed > 0) return Math.round(parsed);
+  return 1;
+};
+
 const normalizeProduct = (item: any) => {
   if (!item) return null;
 
@@ -21,10 +40,7 @@ const normalizeProduct = (item: any) => {
   })();
 
   const packSize = (() => {
-    const p = item.pack;
-    const num = Number(p);
-    if (Number.isFinite(num)) return num;
-    return 1;
+    return parsePackSize(item.pack ?? item.packSize ?? item['บรรจุ (ชิ้น/กล่อง)']);
   })();
 
   const price = Number(item.final_price ?? item.price ?? 0) || 0;
