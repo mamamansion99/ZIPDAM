@@ -21,6 +21,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
   const currentPrice = product.promoPrice && product.promoPrice > 0 ? product.promoPrice : product.price;
   const isPromo = product.promoPrice && product.promoPrice > 0;
   const cleanKey = useMemo(() => (product.imageKey || '').trim(), [product.imageKey]);
+  const hasSize = Boolean((product.size || '').trim());
   const fallback = `https://picsum.photos/seed/${product.imageKey || 'zipdam'}/300/300`;
   const initialSrc = cleanKey.startsWith('http') ? cleanKey : (cleanKey ? fallback : `https://picsum.photos/seed/zipdam/300/300`);
   const [imgSrc, setImgSrc] = useState(initialSrc);
@@ -109,23 +110,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
 
       {/* Content */}
       <div className="flex-1 flex flex-col">
-        <div className="flex justify-between items-start gap-2 mb-1">
-          <p className="text-xs text-zipdam-muted font-medium uppercase tracking-wide">{product.brand}</p>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className="text-[10px] text-zipdam-muted bg-zipdam-surface2 px-1.5 rounded border border-zipdam-border">
-              {product.size}
-            </span>
+        <h3 className="font-semibold text-zipdam-text text-sm leading-tight mb-2 line-clamp-2 min-h-[2.5em]">
+          {product.name}
+        </h3>
+
+        {(hasSize || product.packSize > 0) && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {hasSize && (
+              <span className="text-[10px] text-zipdam-muted bg-zipdam-surface2 px-1.5 rounded border border-zipdam-border">
+                {product.size}
+              </span>
+            )}
             {product.packSize > 0 && (
               <span className="text-[10px] font-medium text-zipdam-muted bg-zipdam-surface2 px-1.5 rounded border border-zipdam-border">
                 {product.packSize} ชิ้น
               </span>
             )}
           </div>
-        </div>
-        
-        <h3 className="font-semibold text-zipdam-text text-sm leading-tight mb-1 line-clamp-2 min-h-[2.5em]">
-          {product.name}
-        </h3>
+        )}
         
         <div className="flex flex-wrap gap-1 mb-3">
             {product.features.slice(0, 2).map(f => (
