@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "./CartContext";
-import { SHIPPING_FEE } from "../lib/tokens";
+import {
+  getShippingFee,
+  SHIPPING_FEE,
+  LOW_ORDER_SHIPPING_FEE,
+  SHIPPING_THRESHOLD,
+} from "../lib/tokens";
 import { slideUpSheet, tapScale } from "../lib/motion";
 import { TH, formatTHB } from "../lib/i18n";
 import { getLiffAuth } from "../lib/liffAuth";
@@ -31,8 +36,15 @@ export const CartSheet = () => {
     address: "",
   });
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showLowOrderShippingModal, setShowLowOrderShippingModal] =
+    useState(false);
   const [contactLoading, setContactLoading] = useState(false);
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const shippingFee = getShippingFee(itemsTotal);
+  const isLowOrderShipping =
+    itemsTotal > 0 &&
+    itemsTotal < SHIPPING_THRESHOLD &&
+    shippingFee === LOW_ORDER_SHIPPING_FEE;
 
   // load cached + server profile
   useEffect(() => {
@@ -77,6 +89,12 @@ export const CartSheet = () => {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!isLowOrderShipping) {
+      setShowLowOrderShippingModal(false);
+    }
+  }, [isLowOrderShipping]);
 
   const persistContact = (info: typeof contactInfo) => {
     if (typeof window === "undefined") return;
@@ -149,12 +167,17 @@ export const CartSheet = () => {
     }
   };
 
-  const performCheckout = async () => {
+  const performCheckout = async (skipLowShippingConfirm = false) => {
     if (!items.length || isSubmitting) return;
     if (missingContact()) {
       setShowContactModal(true);
       return;
     }
+    if (isLowOrderShipping && !skipLowShippingConfirm) {
+      setShowLowOrderShippingModal(true);
+      return;
+    }
+    setShowLowOrderShippingModal(false);
     setIsSubmitting(true);
     try {
       const auth = getLiffAuth();
@@ -399,9 +422,7 @@ export const CartSheet = () => {
             </div>
             <div className="flex justify-between text-zipdam-muted">
               <span>{TH.shipping}</span>
-              <span>
-                {itemsTotal > 0 ? formatTHB(SHIPPING_FEE) : formatTHB(0)}
-              </span>
+              <span>{formatTHB(shippingFee)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg text-zipdam-text pt-2 border-t border-zipdam-border">
               <span>{TH.total}</span>
@@ -555,6 +576,53 @@ export const CartSheet = () => {
                   onClick={saveContactProfile}
                 >
                   {isSavingContact ? "กำลังบันทึก..." : "บันทึก"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Low-order shipping notice modal */}
+      <AnimatePresence>
+        {showLowOrderShippingModal && (
+          <motion.div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4 pointer-events-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLowOrderShippingModal(false)}
+          >
+            <div
+              className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-gray-900">
+                แจ้งค่าส่ง {formatTHB(LOW_ORDER_SHIPPING_FEE)}
+              </h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                ยอดสั่งซื้อสินค้าต่ำกว่า {formatTHB(SHIPPING_THRESHOLD)} ระบบจะคิดค่าส่ง{" "}
+                {formatTHB(LOW_ORDER_SHIPPING_FEE)} สำหรับออเดอร์นี้
+              </p>
+              <p className="text-sm text-zipdam-gold font-semibold">
+                เพิ่มสินค้าให้ครบ {formatTHB(SHIPPING_THRESHOLD)} เพื่อค่าส่ง{" "}
+                {formatTHB(SHIPPING_FEE)}
+              </p>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  className="flex-1 h-12 rounded-xl border border-gray-200 text-gray-700 font-semibold"
+                  onClick={() => setShowLowOrderShippingModal(false)}
+                  disabled={isSubmitting}
+                >
+                  กลับไปแก้ไข
+                </button>
+                <button
+                  className="flex-1 h-12 rounded-xl bg-zipdam-gradient text-white font-bold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => performCheckout(true)}
+                  disabled={isSubmitting}
+                >
+                  ยืนยันสั่งซื้อ
                 </button>
               </div>
             </div>

@@ -6,6 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const SHIPPING_FEE = 20;
+export const LOW_ORDER_SHIPPING_FEE = 30;
+export const SHIPPING_THRESHOLD = 200;
+
+export const getShippingFee = (itemsTotal: number) => {
+  if (itemsTotal <= 0) return 0;
+  return itemsTotal < SHIPPING_THRESHOLD ? LOW_ORDER_SHIPPING_FEE : SHIPPING_FEE;
+};
 
 export const DEMO_USER = {
   userId: 'U1234567890abcdef',

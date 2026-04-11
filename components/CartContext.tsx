@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { Product, CartItem } from '../types';
+import { getShippingFee } from '../lib/tokens';
 
 interface CartContextType {
   items: CartItem[];
@@ -76,7 +77,8 @@ export function CartProvider({ children }: { children?: React.ReactNode }) {
     return acc + (price * i.qty);
   }, 0), [items]);
 
-  const grandTotal = itemsTotal > 0 ? itemsTotal + 20 : 0; // Shipping 20
+  const shippingFee = getShippingFee(itemsTotal);
+  const grandTotal = itemsTotal + shippingFee;
 
   return (
     <CartContext.Provider value={{
