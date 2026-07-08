@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from './components/Header';
-import { SegmentedControl } from './components/SegmentedControl';
-import { QuickOrderView } from './components/QuickOrderView';
 import { BrowseView } from './components/BrowseView';
 import { StickyCartBar } from './components/StickyCartBar';
 import { CartProvider } from './components/CartContext';
@@ -16,7 +13,6 @@ import { Product } from './types';
 import { setLiffAuth, getLiffAuth } from './lib/liffAuth';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'quick' | 'browse'>('quick');
   const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<{ displayName?: string; pictureUrl?: string }>({});
@@ -95,35 +91,12 @@ function App() {
       <FavoritesProvider>
       <main className="min-h-screen pb-24 relative bg-zipdam-surface font-sans text-zipdam-text">
         <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
-        <SegmentedControl activeTab={activeTab} onChange={setActiveTab} />
 
         {isLoading ? (
           <div className="mt-4">{renderSkeleton()}</div>
         ) : (
           <div className="mt-4">
-            <AnimatePresence mode="wait">
-              {activeTab === 'quick' ? (
-                <motion.div
-                  key="quick"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <QuickOrderView products={products} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="browse"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <BrowseView products={products} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <BrowseView products={products} />
           </div>
         )}
 
