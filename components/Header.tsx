@@ -1,5 +1,6 @@
 import React from 'react';
 import { DEMO_USER } from '../lib/tokens';
+import { TH } from '../lib/i18n';
 
 type HeaderProps = {
   displayName?: string;
