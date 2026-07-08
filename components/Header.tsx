@@ -1,6 +1,5 @@
 import React from 'react';
 import { DEMO_USER } from '../lib/tokens';
-import { TH } from '../lib/i18n';
 
 type HeaderProps = {
   displayName?: string;
@@ -13,7 +12,7 @@ export const Header = ({ displayName, pictureUrl }: HeaderProps) => {
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md pt-4 pb-2 px-4 transition-all border-b border-zipdam-border/50">
       {/* Top Row: Identity */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
             <img 
@@ -37,26 +36,6 @@ export const Header = ({ displayName, pictureUrl }: HeaderProps) => {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="w-4 h-4 text-zipdam-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-         </div>
-         <input 
-            type="text" 
-            placeholder={TH.searchPlaceholder} 
-            className="w-full bg-zipdam-surface2 text-sm text-zipdam-text placeholder-zipdam-muted rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-zipdam-gold transition-all border border-transparent focus:bg-white"
-         />
-         <button className="absolute inset-y-0 right-1 px-2 flex items-center">
-            <div className="bg-white p-1 rounded-md border border-zipdam-border shadow-sm">
-               <svg className="w-4 h-4 text-zipdam-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-               </svg>
-            </div>
-         </button>
-      </div>
     </header>
   );
 };
