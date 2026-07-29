@@ -10,7 +10,7 @@ import { CartSheet } from './components/CartSheet';
 import { OrderSuccess } from './components/OrderSuccess';
 import { MOCK_PRODUCTS } from './lib/tokens';
 import { Product } from './types';
-import { setLiffAuth, getLiffAuth } from './lib/liffAuth';
+import { getLiffAuth, initializeLiffAuth } from './lib/liffAuth';
 
 function App() {
   const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
@@ -29,22 +29,12 @@ function App() {
 
     (async () => {
       try {
-        const liff = (await import('@line/liff')).default;
-        await liff.init({ liffId });
-        await liff.ready;
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href });
-          return;
-        }
-        const [p, idToken] = await Promise.all([liff.getProfile(), liff.getIDToken()]);
-        if (!cancelled) {
-          setLiffAuth({
-            idToken: idToken || undefined,
-            lineUserId: p?.userId,
-            displayName: p?.displayName,
-            pictureUrl: p?.pictureUrl,
+        const auth = await initializeLiffAuth(liffId);
+        if (!cancelled && auth) {
+          setProfile({
+            displayName: auth.displayName,
+            pictureUrl: auth.pictureUrl,
           });
-          setProfile({ displayName: p?.displayName, pictureUrl: p?.pictureUrl });
         }
       } catch (err) {
         console.error('LIFF init failed', err);

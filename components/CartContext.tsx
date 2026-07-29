@@ -22,12 +22,52 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const CART_STORAGE_KEY = "zipdam_cart_items";
+const RESUME_CART_KEY = "zipdam_resume_cart";
 
 export function CartProvider({ children }: { children?: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartHydrated, setCartHydrated] = useState(false);
   const [isCartOpen, setCartOpen] = useState(false);
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ orderId?: string } | null>(null);
+
+  useEffect(() => {
+    try {
+      const cached = window.localStorage.getItem(CART_STORAGE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setItems(
+            parsed.filter(
+              (item) =>
+                item &&
+                typeof item.id === "string" &&
+                Number.isFinite(Number(item.qty)) &&
+                Number(item.qty) > 0,
+            ),
+          );
+        }
+      }
+      if (window.sessionStorage.getItem(RESUME_CART_KEY) === "1") {
+        window.sessionStorage.removeItem(RESUME_CART_KEY);
+        setCartOpen(true);
+      }
+    } catch (_) {
+      // Ignore damaged browser storage and start with an empty cart.
+    } finally {
+      setCartHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!cartHydrated) return;
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch (_) {
+      // Storage can be unavailable in private browser contexts.
+    }
+  }, [items, cartHydrated]);
 
   // Auto-clear last added trigger
   useEffect(() => {

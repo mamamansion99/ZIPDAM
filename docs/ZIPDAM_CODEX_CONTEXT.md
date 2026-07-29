@@ -66,6 +66,10 @@ The frontend API proxies this payload to the deployed Apps Script web app.
    - `customerId = same U...`
 5. Guest orders may be accepted only when `ALLOW_GUEST_ORDERS=true`.
 6. Guest orders get `customerId=""` and loyalty status `EXCLUDED`.
+7. LINE ID tokens expire after one hour. Before admin checks or checkout, the
+   frontend inspects the token expiry and starts a fresh LIFF login when needed.
+8. Cart contents are stored locally so an authentication redirect does not
+   discard a pending order.
 
 ## Spreadsheet schema
 

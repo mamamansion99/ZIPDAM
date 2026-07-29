@@ -9,7 +9,13 @@ import {
 } from "../lib/tokens";
 import { slideUpSheet, tapScale } from "../lib/motion";
 import { TH, formatTHB } from "../lib/i18n";
-import { getLiffAuth, requireLiffAuth } from "../lib/liffAuth";
+import {
+  getLiffAuth,
+  isExpiredLineTokenError,
+  LiffReauthStartedError,
+  requireLiffAuth,
+  restartLiffAuth,
+} from "../lib/liffAuth";
 import { AdminCustomer, NewAdminCustomer } from "../types";
 
 type ContactInfo = {
@@ -145,6 +151,9 @@ export const CartSheet = () => {
           }),
         });
         const data = await response.json().catch(() => ({}));
+        if (isExpiredLineTokenError(data?.error)) {
+          await restartLiffAuth();
+        }
         if (!cancelled) setIsAdmin(Boolean(response.ok && data.isAdmin));
       } catch (_) {
         if (!cancelled) setIsAdmin(false);
@@ -199,6 +208,9 @@ export const CartSheet = () => {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok === false) {
+        if (isExpiredLineTokenError(data.error)) {
+          await restartLiffAuth();
+        }
         throw new Error(data.error || "บันทึกข้อมูลไม่สำเร็จ");
       }
 
@@ -214,6 +226,7 @@ export const CartSheet = () => {
       persistContact(nextInfo);
       setShowContactModal(false);
     } catch (e) {
+      if (e instanceof LiffReauthStartedError) return;
       const msg = e instanceof Error ? e.message : String(e);
       setTimeout(() => alert(`บันทึกข้อมูลไม่สำเร็จ: ${msg}`), 0);
     } finally {
@@ -241,6 +254,9 @@ export const CartSheet = () => {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.ok === false) {
+        if (isExpiredLineTokenError(data.error)) {
+          await restartLiffAuth();
+        }
         throw new Error(data.error || "ค้นหาลูกค้าไม่สำเร็จ");
       }
       setCustomerResults(
@@ -248,6 +264,7 @@ export const CartSheet = () => {
       );
     } catch (error) {
       setCustomerResults([]);
+      if (error instanceof LiffReauthStartedError) return;
       setCustomerSearchError(
         error instanceof Error ? error.message : String(error),
       );
@@ -311,6 +328,9 @@ export const CartSheet = () => {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.ok === false || !data.customer) {
+        if (isExpiredLineTokenError(data.error)) {
+          await restartLiffAuth();
+        }
         throw new Error(data.error || "สร้างลูกค้าไม่สำเร็จ");
       }
 
@@ -322,6 +342,7 @@ export const CartSheet = () => {
       setNewCustomer(EMPTY_NEW_CUSTOMER);
       chooseCustomer(customer);
     } catch (error) {
+      if (error instanceof LiffReauthStartedError) return;
       setCustomerCreateError(
         error instanceof Error ? error.message : String(error),
       );
@@ -386,6 +407,9 @@ export const CartSheet = () => {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok === false) {
+        if (isExpiredLineTokenError(data.error)) {
+          await restartLiffAuth();
+        }
         throw new Error(data.error || "Order failed");
       }
 
@@ -395,6 +419,7 @@ export const CartSheet = () => {
       if (orderMode === "SELF") persistContact(contactInfo);
       if (orderMode === "ADMIN") switchToSelfOrder();
     } catch (e) {
+      if (e instanceof LiffReauthStartedError) return;
       const msg = e instanceof Error ? e.message : String(e);
       setTimeout(() => alert(`สั่งซื้อไม่สำเร็จ: ${msg}`), 0);
     } finally {
