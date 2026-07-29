@@ -6,6 +6,7 @@ export interface LiffAuth {
 }
 
 let currentAuth: LiffAuth = {};
+let initializationPromise: Promise<LiffAuth | null> | null = null;
 const DEFAULT_LIFF_ID = "2008727011-FNiAJIzb";
 const REAUTH_STARTED_AT_KEY = "zipdam_liff_reauth_started_at";
 const RESUME_CART_KEY = "zipdam_resume_cart";
@@ -85,6 +86,26 @@ function clearReauthMarker() {
   window.sessionStorage.removeItem(REAUTH_STARTED_AT_KEY);
 }
 
+function clearLiffCallbackParameters() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  let changed = false;
+  ["code", "state", "liffClientId", "liffRedirectUri"].forEach((key) => {
+    if (url.searchParams.has(key)) {
+      url.searchParams.delete(key);
+      changed = true;
+    }
+  });
+  if (changed) {
+    const query = url.searchParams.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${query ? `?${query}` : ""}${url.hash}`,
+    );
+  }
+}
+
 async function beginLiffReauth(liff: any): Promise<never> {
   if (typeof window === "undefined") {
     throw new Error("LINE authentication is unavailable");
@@ -107,7 +128,7 @@ async function beginLiffReauth(liff: any): Promise<never> {
     window.location.reload();
   } else {
     if (liff.isLoggedIn?.()) liff.logout();
-    liff.login({ redirectUri: getLoginRedirectUri() });
+    window.location.replace(getLoginRedirectUri());
   }
 
   throw new LiffReauthStartedError();
@@ -122,24 +143,27 @@ export function isExpiredLineTokenError(value: unknown) {
 export async function restartLiffAuth(): Promise<never> {
   const liff = (await import("@line/liff")).default;
   if (!liff.id) {
-    await liff.init({ liffId: getLiffId() });
+    await liff.init({
+      liffId: getLiffId(),
+      withLoginOnExternalBrowser: true,
+    });
     await liff.ready;
   }
   return beginLiffReauth(liff);
 }
 
-export async function initializeLiffAuth(
+async function runLiffInitialization(
   liffId = getLiffId(),
 ): Promise<LiffAuth | null> {
   const liff = (await import("@line/liff")).default;
-  await liff.init({ liffId });
+  await liff.init({
+    liffId,
+    withLoginOnExternalBrowser: true,
+  });
   await liff.ready;
 
   if (!liff.isLoggedIn()) {
-    if (!liff.isInClient?.()) {
-      liff.login({ redirectUri: getLoginRedirectUri() });
-    }
-    return null;
+    return beginLiffReauth(liff);
   }
 
   const idToken = liff.getIDToken?.();
@@ -159,8 +183,21 @@ export async function initializeLiffAuth(
     pictureUrl: profile.pictureUrl,
   };
   clearReauthMarker();
+  clearLiffCallbackParameters();
   setLiffAuth(auth);
   return auth;
+}
+
+export function initializeLiffAuth(
+  liffId = getLiffId(),
+): Promise<LiffAuth | null> {
+  if (!initializationPromise) {
+    initializationPromise = runLiffInitialization(liffId).catch((error) => {
+      initializationPromise = null;
+      throw error;
+    });
+  }
+  return initializationPromise;
 }
 
 export async function requireLiffAuth(): Promise<{
@@ -173,17 +210,15 @@ export async function requireLiffAuth(): Promise<{
     "ไม่สามารถยืนยันบัญชี LINE ได้ กรุณาเปิดหน้านี้ใน LINE แล้วเข้าสู่ระบบอีกครั้ง";
 
   try {
+    if (initializationPromise) {
+      await initializationPromise;
+    }
     const liff = (await import("@line/liff")).default;
     if (!liff.id) {
-      await liff.init({ liffId: getLiffId() });
-      await liff.ready;
+      await initializeLiffAuth(getLiffId());
     }
     if (!liff?.isLoggedIn || !liff.isLoggedIn()) {
-      if (!liff.isInClient?.()) {
-        liff.login({ redirectUri: getLoginRedirectUri() });
-        throw new LiffReauthStartedError();
-      }
-      throw new Error(authError);
+      return beginLiffReauth(liff);
     }
 
     const idToken = liff.getIDToken?.();
@@ -205,6 +240,7 @@ export async function requireLiffAuth(): Promise<{
       pictureUrl: profile.pictureUrl,
     };
     clearReauthMarker();
+    clearLiffCallbackParameters();
     setLiffAuth(nextAuth);
     return nextAuth;
   } catch (error) {
