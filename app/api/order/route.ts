@@ -4,7 +4,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbz7e8urAY_67A-NkV6sO6BL
 
 async function postToGas(body: any) {
   const headers = { 'Content-Type': 'application/json' };
-  let res = await fetch(GAS_URL, {
+  const res = await fetch(GAS_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -13,11 +13,7 @@ async function postToGas(body: any) {
 
   const loc = res.headers.get('location');
   if (res.status >= 300 && res.status < 400 && loc) {
-    res = await fetch(loc, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    return fetch(loc, { method: 'GET', redirect: 'follow' });
   }
 
   return res;
@@ -26,21 +22,30 @@ async function postToGas(body: any) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { idToken, cart } = body;
+    const cart = Array.isArray(body?.cart)
+      ? body.cart.map((item: any) => ({
+          SKU: item?.SKU || item?.id || '',
+          Brand: item?.Brand || item?.brand || '',
+          Size: item?.Size || item?.size || '',
+          Name: item?.Name || item?.name || '',
+          qty: item?.qty ?? item?.quantity ?? 0,
+        }))
+      : [];
 
-    if (!cart || cart.length === 0) {
+    if (cart.length === 0) {
       return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
     }
 
-    // Proxy the order to Google Apps Script
-    // We wrap the payload in an action structure
     const res = await postToGas({
-      action: 'order',
-      payload: {
-        idToken,
-        cart,
-        timestamp: new Date().toISOString()
-      }
+      action: body.action || 'order',
+      idToken: body.idToken || '',
+      lineUserId: body.lineUserId || '',
+      displayName: body.displayName || '',
+      store: body.store || '',
+      area: body.area || body.soi || '',
+      phone: body.phone || '',
+      address: body.address || body.defaultAddress || '',
+      cart,
     });
 
     if (!res.ok) {
@@ -49,11 +54,7 @@ export async function POST(request: Request) {
 
     const data = await res.json();
 
-    return NextResponse.json({ 
-      success: true, 
-      orderId: data.orderId || 'ORD-' + Date.now().toString().slice(-6),
-      details: data 
-    });
+    return NextResponse.json(data, { status: res.status });
 
   } catch (error) {
     console.error("Order Submit Error:", error);

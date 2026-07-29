@@ -16,7 +16,18 @@ export default async function handler(req, res) {
     });
 
     if (response.status >= 300 && response.status < 400) {
-      return { status: 200, text: JSON.stringify({ ok: true, redirected: true }) };
+      const location = response.headers.get("location");
+      if (!location) {
+        return {
+          status: 502,
+          text: JSON.stringify({
+            ok: false,
+            error: "Apps Script redirect was missing a destination",
+          }),
+        };
+      }
+      const follow = await fetch(location, { method: "GET", redirect: "follow" });
+      return { status: follow.status, text: await follow.text() };
     }
 
     const text = await response.text();
@@ -26,7 +37,15 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-    const cart = Array.isArray(body?.cart) ? body.cart : [];
+    const cart = Array.isArray(body?.cart)
+      ? body.cart.map((item) => ({
+          SKU: item?.SKU || item?.id || "",
+          Brand: item?.Brand || item?.brand || "",
+          Size: item?.Size || item?.size || "",
+          Name: item?.Name || item?.name || "",
+          qty: item?.qty ?? item?.quantity ?? 0,
+        }))
+      : [];
     if (!cart.length) {
       res.status(400).json({ ok: false, error: "Cart is empty" });
       return;

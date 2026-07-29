@@ -7,6 +7,9 @@ export interface LiffAuth {
 
 let currentAuth: LiffAuth = {};
 
+export const isRealLineUserId = (value?: string | null) =>
+  /^U[0-9a-f]{32}$/i.test(String(value || "").trim());
+
 export function setLiffAuth(auth: LiffAuth) {
   currentAuth = auth;
   if (typeof window !== 'undefined') {
@@ -29,4 +32,43 @@ export function getLiffAuth(): LiffAuth {
     }
   }
   return currentAuth;
+}
+
+export async function requireLiffAuth(): Promise<{
+  idToken: string;
+  lineUserId: string;
+  displayName: string;
+  pictureUrl?: string;
+}> {
+  const authError =
+    "ไม่สามารถยืนยันบัญชี LINE ได้ กรุณาเปิดหน้านี้ใน LINE แล้วเข้าสู่ระบบอีกครั้ง";
+
+  try {
+    const liff = (await import("@line/liff")).default;
+    if (!liff?.isLoggedIn || !liff.isLoggedIn()) {
+      throw new Error(authError);
+    }
+
+    const [idToken, profile] = await Promise.all([
+      Promise.resolve(liff.getIDToken && liff.getIDToken()),
+      liff.getProfile(),
+    ]);
+
+    if (!idToken || !isRealLineUserId(profile?.userId)) {
+      throw new Error(authError);
+    }
+
+    const nextAuth = {
+      idToken,
+      lineUserId: profile.userId,
+      displayName:
+        profile.displayName || getLiffAuth().displayName || "LINE customer",
+      pictureUrl: profile.pictureUrl,
+    };
+    setLiffAuth(nextAuth);
+    return nextAuth;
+  } catch (error) {
+    if (error instanceof Error && error.message === authError) throw error;
+    throw new Error(authError);
+  }
 }
