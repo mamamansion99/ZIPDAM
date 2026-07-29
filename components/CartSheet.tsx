@@ -10,6 +10,21 @@ import {
 import { slideUpSheet, tapScale } from "../lib/motion";
 import { TH, formatTHB } from "../lib/i18n";
 import { getLiffAuth, requireLiffAuth } from "../lib/liffAuth";
+import { AdminCustomer } from "../types";
+
+type ContactInfo = {
+  store: string;
+  area: string;
+  phone: string;
+  address: string;
+};
+
+const EMPTY_CONTACT: ContactInfo = {
+  store: "",
+  area: "",
+  phone: "",
+  address: "",
+};
 
 export const CartSheet = () => {
   const {
@@ -24,22 +39,24 @@ export const CartSheet = () => {
     triggerOrderSuccess,
   } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contactInfo, setContactInfo] = useState<{
-    store: string;
-    area: string;
-    phone: string;
-    address: string;
-  }>({
-    store: "",
-    area: "",
-    phone: "",
-    address: "",
-  });
+  const [contactInfo, setContactInfo] = useState<ContactInfo>(EMPTY_CONTACT);
+  const [selfContactInfo, setSelfContactInfo] =
+    useState<ContactInfo>(EMPTY_CONTACT);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showLowOrderShippingModal, setShowLowOrderShippingModal] =
     useState(false);
   const [contactLoading, setContactLoading] = useState(false);
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [orderMode, setOrderMode] = useState<"SELF" | "ADMIN">("SELF");
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<AdminCustomer | null>(null);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerResults, setCustomerResults] = useState<AdminCustomer[]>([]);
+  const [customerSearching, setCustomerSearching] = useState(false);
+  const [customerSearchError, setCustomerSearchError] = useState("");
   const shippingFee = getShippingFee(itemsTotal);
   const isLowOrderShipping =
     itemsTotal > 0 &&
@@ -54,6 +71,7 @@ export const CartSheet = () => {
       try {
         const parsed = JSON.parse(cached);
         setContactInfo((prev) => ({ ...prev, ...parsed }));
+        setSelfContactInfo((prev) => ({ ...prev, ...parsed }));
       } catch (_) {}
     }
 
@@ -74,13 +92,20 @@ export const CartSheet = () => {
         const data = await res.json().catch(() => ({}));
         if (data && data.profile) {
           const profile = data.profile;
-          setContactInfo((prev) => ({
-            store: profile.store || prev.store || "",
-            area: profile.area || prev.area || "",
-            phone: profile.phone || prev.phone || "",
-            address:
-              profile.address || profile.defaultAddress || prev.address || "",
-          }));
+          setContactInfo((prev) => {
+            const nextInfo = {
+              store: profile.store || prev.store || "",
+              area: profile.area || prev.area || "",
+              phone: profile.phone || prev.phone || "",
+              address:
+                profile.address ||
+                profile.defaultAddress ||
+                prev.address ||
+                "",
+            };
+            setSelfContactInfo(nextInfo);
+            return nextInfo;
+          });
         }
       } catch (_) {
         // ignore
@@ -91,12 +116,41 @@ export const CartSheet = () => {
   }, []);
 
   useEffect(() => {
+    if (!isCartOpen || adminChecked) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { idToken, lineUserId, displayName } = await requireLiffAuth();
+        const response = await fetch("/api/admin", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            action: "admin_status",
+            idToken,
+            lineUserId,
+            displayName,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!cancelled) setIsAdmin(Boolean(response.ok && data.isAdmin));
+      } catch (_) {
+        if (!cancelled) setIsAdmin(false);
+      } finally {
+        if (!cancelled) setAdminChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isCartOpen, adminChecked]);
+
+  useEffect(() => {
     if (!isLowOrderShipping) {
       setShowLowOrderShippingModal(false);
     }
   }, [isLowOrderShipping]);
 
-  const persistContact = (info: typeof contactInfo) => {
+  const persistContact = (info: ContactInfo) => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("zipdam_contact_info", JSON.stringify(info));
   };
@@ -106,6 +160,11 @@ export const CartSheet = () => {
 
   const saveContactProfile = async () => {
     if (isSavingContact) return;
+    if (orderMode === "ADMIN") {
+      if (missingContact()) return;
+      setShowContactModal(false);
+      return;
+    }
     setIsSavingContact(true);
     try {
       const { idToken, lineUserId, displayName } = await requireLiffAuth();
@@ -138,6 +197,7 @@ export const CartSheet = () => {
         address: profile.address || profile.defaultAddress || contactInfo.address || "",
       };
       setContactInfo(nextInfo);
+      setSelfContactInfo(nextInfo);
       persistContact(nextInfo);
       setShowContactModal(false);
     } catch (e) {
@@ -148,8 +208,71 @@ export const CartSheet = () => {
     }
   };
 
+  const searchCustomers = async (query = customerQuery) => {
+    if (customerSearching) return;
+    setCustomerSearching(true);
+    setCustomerSearchError("");
+    try {
+      const { idToken, lineUserId, displayName } = await requireLiffAuth();
+      const response = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "admin_customers_search",
+          idToken,
+          lineUserId,
+          displayName,
+          query,
+          limit: 20,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || "ค้นหาลูกค้าไม่สำเร็จ");
+      }
+      setCustomerResults(
+        Array.isArray(data.customers) ? data.customers : [],
+      );
+    } catch (error) {
+      setCustomerResults([]);
+      setCustomerSearchError(
+        error instanceof Error ? error.message : String(error),
+      );
+    } finally {
+      setCustomerSearching(false);
+    }
+  };
+
+  const openCustomerSelection = () => {
+    if (orderMode === "SELF") setSelfContactInfo(contactInfo);
+    setShowCustomerModal(true);
+    if (!customerResults.length) void searchCustomers("");
+  };
+
+  const chooseCustomer = (customer: AdminCustomer) => {
+    setSelectedCustomer(customer);
+    setOrderMode("ADMIN");
+    setContactInfo({
+      store: customer.store || "",
+      area: customer.area || "",
+      phone: customer.phone || "",
+      address: customer.defaultAddress || "",
+    });
+    setShowCustomerModal(false);
+  };
+
+  const switchToSelfOrder = () => {
+    setOrderMode("SELF");
+    setSelectedCustomer(null);
+    setContactInfo(selfContactInfo);
+  };
+
   const performCheckout = async (skipLowShippingConfirm = false) => {
     if (!items.length || isSubmitting) return;
+    if (orderMode === "ADMIN" && !selectedCustomer) {
+      openCustomerSelection();
+      return;
+    }
     if (missingContact()) {
       setShowContactModal(true);
       return;
@@ -164,10 +287,12 @@ export const CartSheet = () => {
       const { idToken, lineUserId, displayName } = await requireLiffAuth();
 
       const payload = {
-        action: "order",
+        action: orderMode === "ADMIN" ? "admin_order" : "order",
         idToken,
         lineUserId,
         displayName,
+        selectedCustomerId:
+          orderMode === "ADMIN" ? selectedCustomer?.customerId : undefined,
         store: contactInfo.store,
         area: contactInfo.area,
         phone: contactInfo.phone,
@@ -181,11 +306,14 @@ export const CartSheet = () => {
         })),
       };
 
-      const res = await fetch("/api/order", {
+      const res = await fetch(
+        orderMode === "ADMIN" ? "/api/admin" : "/api/order",
+        {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
-      });
+        },
+      );
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok === false) {
@@ -195,7 +323,8 @@ export const CartSheet = () => {
       clearCart();
       setCartOpen(false);
       triggerOrderSuccess(data.orderId);
-      persistContact(contactInfo);
+      if (orderMode === "SELF") persistContact(contactInfo);
+      if (orderMode === "ADMIN") switchToSelfOrder();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setTimeout(() => alert(`สั่งซื้อไม่สำเร็จ: ${msg}`), 0);
@@ -256,13 +385,81 @@ export const CartSheet = () => {
           </button>
         </div>
 
+        {/* Admin order mode */}
+        {isAdmin && (
+          <div className="px-6 pt-4">
+            <div className="rounded-2xl border border-zipdam-gold/30 bg-zipdam-gold/5 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wide text-zipdam-gold">
+                  Admin order
+                </span>
+                {orderMode === "ADMIN" && selectedCustomer && (
+                  <span className="rounded-full bg-zipdam-gold/10 px-2 py-1 text-[10px] font-semibold text-zipdam-gold">
+                    สั่งให้ลูกค้า
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-white p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={switchToSelfOrder}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                    orderMode === "SELF"
+                      ? "bg-zipdam-gradient text-white"
+                      : "text-zipdam-muted hover:text-zipdam-text"
+                  }`}
+                >
+                  ออเดอร์ของฉัน
+                </button>
+                <button
+                  type="button"
+                  onClick={openCustomerSelection}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                    orderMode === "ADMIN"
+                      ? "bg-zipdam-gradient text-white"
+                      : "text-zipdam-muted hover:text-zipdam-text"
+                  }`}
+                >
+                  สั่งให้ลูกค้า
+                </button>
+              </div>
+              {orderMode === "ADMIN" && selectedCustomer && (
+                <button
+                  type="button"
+                  onClick={openCustomerSelection}
+                  className="mt-3 w-full rounded-xl border border-zipdam-border bg-white p-3 text-left"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-bold text-zipdam-text">
+                        {selectedCustomer.displayName}
+                      </div>
+                      <div className="mt-0.5 text-xs text-zipdam-muted">
+                        {selectedCustomer.store || "ยังไม่มีชื่อร้าน"}
+                        {selectedCustomer.phone
+                          ? ` • ${selectedCustomer.phone}`
+                          : ""}
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-zipdam-gold">
+                      เปลี่ยน
+                    </span>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Contact summary */}
         <div className="px-6 pt-4">
           <div className="bg-white border border-zipdam-border rounded-2xl p-4 shadow-sm">
             <div className="flex justify-between items-start">
               <div>
                 <div className="text-xs uppercase tracking-wide text-zipdam-muted font-semibold">
-                  ข้อมูลจัดส่ง
+                  {orderMode === "ADMIN"
+                    ? `ข้อมูลจัดส่งของ ${selectedCustomer?.displayName || "ลูกค้า"}`
+                    : "ข้อมูลจัดส่ง"}
                 </div>
                 {!missingContact() ? (
                   <div className="mt-2 space-y-1 text-sm text-zipdam-text">
@@ -410,6 +607,111 @@ export const CartSheet = () => {
         </div>
       </motion.div>
 
+      {/* Admin customer selection */}
+      <AnimatePresence>
+        {showCustomerModal && (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4 pointer-events-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCustomerModal(false)}
+          >
+            <div
+              className="flex max-h-[82vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="border-b border-zipdam-border p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      เลือกลูกค้า
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      ค้นหาด้วยชื่อ ร้าน เบอร์โทร หรือ LINE ID
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomerModal(false)}
+                    className="text-gray-400 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <form
+                  className="mt-4 flex gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void searchCustomers();
+                  }}
+                >
+                  <input
+                    className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                    placeholder="ชื่อลูกค้า / ร้าน / เบอร์โทร"
+                    value={customerQuery}
+                    onChange={(event) => setCustomerQuery(event.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    disabled={customerSearching}
+                    className="rounded-xl bg-zipdam-gradient px-4 py-2 font-semibold text-white disabled:opacity-60"
+                  >
+                    {customerSearching ? "กำลังค้น..." : "ค้นหา"}
+                  </button>
+                </form>
+              </div>
+
+              <div className="flex-1 space-y-2 overflow-y-auto p-4">
+                {customerSearchError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {customerSearchError}
+                  </div>
+                )}
+                {!customerSearching &&
+                  !customerSearchError &&
+                  customerResults.length === 0 && (
+                    <div className="py-10 text-center text-sm text-zipdam-muted">
+                      ไม่พบลูกค้าที่เชื่อม LINE แล้ว
+                    </div>
+                  )}
+                {customerResults.map((customer) => (
+                  <button
+                    type="button"
+                    key={customer.customerId}
+                    onClick={() => chooseCustomer(customer)}
+                    className={`w-full rounded-2xl border p-4 text-left transition-colors ${
+                      selectedCustomer?.customerId === customer.customerId
+                        ? "border-zipdam-gold bg-zipdam-gold/5"
+                        : "border-zipdam-border bg-white hover:border-zipdam-gold/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-bold text-zipdam-text">
+                          {customer.displayName}
+                        </div>
+                        <div className="mt-1 truncate text-sm text-zipdam-muted">
+                          {customer.store || "ยังไม่มีชื่อร้าน"}
+                        </div>
+                        <div className="mt-1 text-xs text-zipdam-muted">
+                          {[customer.area, customer.phone]
+                            .filter(Boolean)
+                            .join(" • ") || "ยังไม่มีข้อมูลจัดส่ง"}
+                        </div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-zipdam-surface2 px-2 py-1 text-[10px] font-medium text-zipdam-muted">
+                        …{customer.lineUserId.slice(-6)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Contact info modal */}
       <AnimatePresence>
         {showContactModal && (
@@ -430,7 +732,9 @@ export const CartSheet = () => {
                     ข้อมูลร้าน / การจัดส่ง
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    กรอกครั้งเดียว ระบบจะจำให้ครั้งต่อไป
+                    {orderMode === "ADMIN"
+                      ? "ข้อมูลนี้จะบันทึกลงโปรไฟล์ลูกค้าเมื่อสร้างออเดอร์"
+                      : "กรอกครั้งเดียว ระบบจะจำให้ครั้งต่อไป"}
                   </p>
                 </div>
                 <button
@@ -535,7 +839,11 @@ export const CartSheet = () => {
                   }
                   onClick={saveContactProfile}
                 >
-                  {isSavingContact ? "กำลังบันทึก..." : "บันทึก"}
+                  {isSavingContact
+                    ? "กำลังบันทึก..."
+                    : orderMode === "ADMIN"
+                      ? "ใช้ข้อมูลนี้"
+                      : "บันทึก"}
                 </button>
               </div>
             </div>

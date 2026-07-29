@@ -175,6 +175,20 @@ ADMIN
 LEGACY
 ```
 
+Admin-created orders use the selected customer's verified, existing LINE identity:
+
+```text
+lineUserId = selected customer U...
+customerId = selected customer U...
+createdByLineUserId = verified admin U...
+orderMode = ADMIN
+```
+
+The frontend must never create an admin order by changing `orderMode` on the
+normal order payload. Admin orders use the dedicated `admin_order` action,
+which verifies the acting admin and resolves the selected customer from the
+Customer sheet.
+
 ### OrderItems
 
 ```text
@@ -343,6 +357,30 @@ frequent_get
 
 Calculates frequently purchased products from Orders + OrderItems for the same LINE ID.
 
+### Admin customer-order endpoints
+
+```text
+admin_status
+admin_customers_search
+admin_order
+```
+
+Every admin request requires a current LINE Login `idToken`. The verified token
+subject must be listed in `ADMIN_LINE_USER_IDS` (or the legacy singular
+`ADMIN_LINE_USER_ID`) in Script Properties.
+
+`admin_customers_search` returns existing customers with a real linked LINE ID.
+`admin_order` accepts a selected canonical customer ID, resolves the customer
+from the Customer sheet, resolves all product pricing from Product, and writes:
+
+```text
+lineUserId = selected customer LINE ID
+customerId = selected customer LINE ID
+createdByLineUserId = acting admin LINE ID
+orderMode = ADMIN
+loyaltyStatus = PENDING
+```
+
 ## Script Properties
 
 Configure these in Apps Script Project Settings > Script Properties:
@@ -353,6 +391,7 @@ LINE_LOGIN_CHANNEL_ID
 LINE_MESSAGING_TOKEN
 N8N_WEBHOOK_URL
 ADMIN_LINE_USER_ID
+ADMIN_LINE_USER_IDS
 FIXED_SHIPPING
 LOW_ORDER_SHIPPING
 SHIPPING_THRESHOLD
@@ -386,7 +425,11 @@ Historical orders without real LINE IDs remain in Orders but do not count toward
 
 Orders sharing the same real LINE ID are combined automatically even when display names differ.
 
-Orders created from the owner's LINE account are counted under the owner's LINE ID unless the app later implements a secure admin customer-selection flow.
+Orders created from the owner's normal `SELF` flow are counted under the
+owner's LINE ID. The current frontend also provides a separate secure
+`ADMIN` flow for configured admins and existing LINE-linked customers.
+Unlinked/manual customer creation remains excluded so that loyalty totals are
+never assigned to an unverified identity.
 
 ## Resolved spreadsheet issue
 

@@ -27,13 +27,26 @@ export interface UserProfile {
   pictureUrl?: string;
 }
 
+export interface AdminCustomer {
+  lineUserId: string;
+  customerId: string;
+  displayName: string;
+  store: string;
+  area: string;
+  phone: string;
+  defaultAddress: string;
+  type: string;
+  status: string;
+}
+
 export type SortOption = 'relevance' | 'priceLow' | 'priceHigh';
 
 export interface OrderPayload {
-  action: 'order';
+  action: 'order' | 'admin_order';
   idToken: string;
   lineUserId: string;
   displayName: string;
+  selectedCustomerId?: string;
   store: string;
   area: string;
   phone: string;
