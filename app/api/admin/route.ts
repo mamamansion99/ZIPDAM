@@ -21,7 +21,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const action = String(body?.action || "");
-    if (!["admin_status", "admin_customers_search", "admin_order"].includes(action)) {
+    if (
+      ![
+        "admin_status",
+        "admin_customers_search",
+        "admin_customer_create",
+        "admin_order",
+      ].includes(action)
+    ) {
       return NextResponse.json(
         { ok: false, error: "Invalid admin action" },
         { status: 400 },
@@ -37,6 +44,15 @@ export async function POST(request: Request) {
     if (action === "admin_customers_search") {
       payload.query = body?.query || "";
       payload.limit = body?.limit || 20;
+    }
+    if (action === "admin_customer_create") {
+      Object.assign(payload, {
+        customerDisplayName: body?.customerDisplayName || "",
+        store: body?.store || "",
+        area: body?.area || body?.soi || "",
+        phone: body?.phone || "",
+        address: body?.address || body?.defaultAddress || "",
+      });
     }
     if (action === "admin_order") {
       const cart = Array.isArray(body?.cart)

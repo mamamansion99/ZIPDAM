@@ -69,6 +69,32 @@ assert.equal(forwardedPayload.cart[0].SKU, "SKU-1");
 assert.equal(forwardedPayload.cart[0].qty, 2);
 assert.equal("price" in forwardedPayload.cart[0], false);
 
+const createResponseResult = createResponse();
+await handler(
+  {
+    method: "POST",
+    body: {
+      action: "admin_customer_create",
+      idToken: "token",
+      lineUserId: `U${"a".repeat(32)}`,
+      displayName: "Admin name",
+      customerDisplayName: "New customer",
+      store: "New store",
+      area: "New area",
+      phone: "0812345678",
+      address: "New address",
+      ignoredPrivateField: "must not be forwarded",
+    },
+  },
+  createResponseResult,
+);
+assert.equal(createResponseResult.statusCode, 200);
+assert.equal(forwardedPayload.action, "admin_customer_create");
+assert.equal(forwardedPayload.displayName, "Admin name");
+assert.equal(forwardedPayload.customerDisplayName, "New customer");
+assert.equal(forwardedPayload.store, "New store");
+assert.equal("ignoredPrivateField" in forwardedPayload, false);
+
 const invalidResponse = createResponse();
 await handler(
   {

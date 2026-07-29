@@ -59,3 +59,11 @@ export interface OrderPayload {
     qty: number;
   }[];
 }
+
+export interface NewAdminCustomer {
+  displayName: string;
+  store: string;
+  area: string;
+  phone: string;
+  address: string;
+}
