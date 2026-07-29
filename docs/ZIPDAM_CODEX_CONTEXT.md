@@ -187,6 +187,9 @@ linked loyaltyStatus = PENDING
 manual loyaltyStatus = EXCLUDED
 ```
 
+When an order earns a spend reward, `rewardApplied` stores the reward and
+cycle, for example `GIFT-10000#1`.
+
 The frontend must never create an admin order by changing `orderMode` on the
 normal order payload. Admin orders use the dedicated `admin_order` action,
 which verifies the acting admin and resolves the selected customer from the
@@ -253,7 +256,7 @@ note
 
 ### LoyaltyLedger
 
-Reserved for future detailed point transactions:
+Records earned and redeemed loyalty rewards:
 
 ```text
 LedgerID
@@ -266,6 +269,15 @@ Points
 CreatedByLineUserId
 Note
 Status
+```
+
+Current spend-reward entries use:
+
+```text
+Type = EARN
+PurchaseAmount = reached spend milestone
+Note = REWARD:<RewardID>:CYCLE:<number>
+Status = ACTIVE
 ```
 
 ### Rewards
@@ -283,7 +295,33 @@ EndDate
 Note
 ```
 
-The current backend endpoint `customer_summary` calculates lifetime spend from Orders and returns active rewards whose `RequiredSpend` has been reached.
+The active `GIFT-10000` reward repeats for every 10,000 baht of eligible
+product spend. Eligible spend uses `Orders.itemsTotal`, excludes shipping and
+cancelled/void orders, and only applies to verified LINE customers. Manual and
+guest identities are excluded.
+
+The backend endpoint `customer_summary` calculates totals from Orders and
+returns active rewards whose `RequiredSpend` has been reached using product
+spend.
+
+## LINE order-confirmation card
+
+After an order is written successfully, the backend sends a white-and-green
+LINE Flex Message to linked customers. The card contains:
+
+```text
+order ID and customer name
+item names, quantities and line totals
+product total, shipping and grand total
+eligible cumulative product spend
+progress toward the next 10,000-baht reward
+new reward-earned state when a threshold is crossed
+```
+
+The backend records each reached reward cycle in `LoyaltyLedger` before
+building the card. This prevents the same cycle from being earned twice.
+Manual customers have no LINE destination, so their admin orders continue to
+notify the admin but do not send a customer card or accrue loyalty spend.
 
 ## Backend endpoints
 
