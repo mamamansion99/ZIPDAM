@@ -70,6 +70,8 @@ The frontend API proxies this payload to the deployed Apps Script web app.
    frontend inspects the token expiry and starts a fresh LIFF login when needed.
 8. Cart contents are stored locally so an authentication redirect does not
    discard a pending order.
+9. All admin/profile/order actions wait for the shared `liff.init()` promise so
+   they cannot run before an external-browser login callback is processed.
 
 ## Spreadsheet schema
 
