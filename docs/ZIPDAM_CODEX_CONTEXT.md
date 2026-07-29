@@ -58,8 +58,8 @@ The frontend API proxies this payload to the deployed Apps Script web app.
 
 ## Identity behaviour
 
-1. Verify `idToken` when present.
-2. Prefer a valid supplied `lineUserId` from LIFF profile.
+1. Require and verify `idToken` before accepting a real LINE customer identity.
+2. Compare the supplied `lineUserId` from LIFF profile with the verified token identity.
 3. If both verified token identity and supplied LINE ID exist but differ, reject unless the Script Property `ALLOW_LINE_ID_MISMATCH=true`.
 4. For a real LINE user:
    - `lineUserId = U...`
@@ -86,7 +86,6 @@ price
 Other supported headers:
 
 ```text
-Feature
 mm
 pack
 promo_price
@@ -293,7 +292,7 @@ Creates one Orders row and one or more OrderItems rows.
 
 ### POST me
 
-Creates or updates the current LINE customer.
+Creates or updates the current LINE customer. A valid `idToken` is required.
 
 ### POST customer_profile
 
@@ -317,6 +316,8 @@ Returns:
   "rewards": []
 }
 ```
+
+A valid `idToken` is required.
 
 ### Favorites endpoints
 
@@ -387,9 +388,9 @@ Orders sharing the same real LINE ID are combined automatically even when displa
 
 Orders created from the owner's LINE account are counted under the owner's LINE ID unless the app later implements a secure admin customer-selection flow.
 
-## Known spreadsheet issue
+## Resolved spreadsheet issue
 
-`OrderItems!B2` currently contains an ARRAYFORMULA that reports `#REF!` because later SKU cells contain data. The new Apps Script writes SKU directly into each inserted row. Codex should remove the conflicting ARRAYFORMULA or convert the entire SKU column to one consistent method before relying on it.
+The conflicting `OrderItems!B2` ARRAYFORMULA has been removed. Apps Script writes each SKU directly into the inserted order-item row.
 
 ## Deployment checklist
 

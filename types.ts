@@ -30,12 +30,19 @@ export interface UserProfile {
 export type SortOption = 'relevance' | 'priceLow' | 'priceHigh';
 
 export interface OrderPayload {
+  action: 'order';
   idToken: string;
+  lineUserId: string;
+  displayName: string;
+  store: string;
+  area: string;
+  phone: string;
+  address: string;
   cart: {
-    brand: string;
-    size: string;
-    name: string;
+    SKU: string;
+    Brand: string;
+    Size: string;
+    Name: string;
     qty: number;
-    price: number;
   }[];
 }

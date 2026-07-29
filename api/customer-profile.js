@@ -16,7 +16,18 @@ export default async function handler(req, res) {
     });
 
     if (response.status >= 300 && response.status < 400) {
-      return { status: 200, text: JSON.stringify({ ok: true, redirected: true }) };
+      const location = response.headers.get('location');
+      if (!location) {
+        return {
+          status: 502,
+          text: JSON.stringify({
+            ok: false,
+            error: 'Apps Script redirect was missing a destination',
+          }),
+        };
+      }
+      const follow = await fetch(location, { method: 'GET', redirect: 'follow' });
+      return { status: follow.status, text: await follow.text() };
     }
 
     const text = await response.text();

@@ -9,7 +9,7 @@ import {
 } from "../lib/tokens";
 import { slideUpSheet, tapScale } from "../lib/motion";
 import { TH, formatTHB } from "../lib/i18n";
-import { getLiffAuth } from "../lib/liffAuth";
+import { getLiffAuth, requireLiffAuth } from "../lib/liffAuth";
 
 export const CartSheet = () => {
   const {
@@ -108,26 +108,7 @@ export const CartSheet = () => {
     if (isSavingContact) return;
     setIsSavingContact(true);
     try {
-      const auth = getLiffAuth();
-      let idToken = auth.idToken || "";
-      let lineUserId = auth.lineUserId || "";
-      let displayName = auth.displayName || "";
-
-      // Refresh LIFF identity if available.
-      try {
-        const liff = (await import("@line/liff")).default;
-        if (liff?.isLoggedIn && liff.isLoggedIn()) {
-          const t = liff.getIDToken && liff.getIDToken();
-          if (t) idToken = t;
-          if (liff.getProfile) {
-            const p = await liff.getProfile();
-            if (p?.userId) lineUserId = p.userId;
-            if (p?.displayName) displayName = p.displayName;
-          }
-        }
-      } catch (_) {
-        // ignore if not in LIFF context
-      }
+      const { idToken, lineUserId, displayName } = await requireLiffAuth();
 
       const res = await fetch("/api/customer-profile", {
         method: "POST",
@@ -180,27 +161,7 @@ export const CartSheet = () => {
     setShowLowOrderShippingModal(false);
     setIsSubmitting(true);
     try {
-      const auth = getLiffAuth();
-
-      let idToken = auth.idToken || "";
-      let lineUserId = auth.lineUserId || "";
-      let displayName = auth.displayName || "";
-
-      // Refresh LIFF idToken/profile right before submit (idToken can expire).
-      try {
-        const liff = (await import("@line/liff")).default;
-        if (liff?.isLoggedIn && liff.isLoggedIn()) {
-          const t = liff.getIDToken && liff.getIDToken();
-          if (t) idToken = t;
-          if (liff.getProfile) {
-            const p = await liff.getProfile();
-            if (p?.userId) lineUserId = p.userId;
-            if (p?.displayName) displayName = p.displayName;
-          }
-        }
-      } catch (_) {
-        // ignore if not in LIFF context
-      }
+      const { idToken, lineUserId, displayName } = await requireLiffAuth();
 
       const payload = {
         action: "order",
@@ -217,7 +178,6 @@ export const CartSheet = () => {
           Size: i.size,
           Name: i.name,
           qty: i.qty,
-          price: i.promoPrice ?? i.price,
         })),
       };
 

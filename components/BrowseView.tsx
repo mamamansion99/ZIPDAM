@@ -56,14 +56,16 @@ export const BrowseView: React.FC<BrowseViewProps> = ({ products }) => {
   }, [brandScopedProducts, selectedType]);
 
   const allFeatures = useMemo(() => {
-    return Array.from(new Set(scopedProducts.flatMap(p => p.features)))
+    return Array.from(
+      new Set<string>(scopedProducts.flatMap(p => [...p.features]))
+    )
       .map(f => (f || '').trim())
       .filter(Boolean)
       .filter(f => f.toLowerCase() !== 'gel');
   }, [scopedProducts]);
 
   const rawSizeValues = useMemo(() => {
-    const unique = new Set(
+    const unique = new Set<string>(
       scopedProducts
         .map(p => (p.size || '').trim())
         .filter(Boolean)
