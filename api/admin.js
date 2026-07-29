@@ -36,7 +36,14 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const action = String(body?.action || "");
-    if (!["admin_status", "admin_customers_search", "admin_order"].includes(action)) {
+    if (
+      ![
+        "admin_status",
+        "admin_customers_search",
+        "admin_customer_create",
+        "admin_order",
+      ].includes(action)
+    ) {
       res.status(400).json({ ok: false, error: "Invalid admin action" });
       return;
     }
@@ -51,6 +58,14 @@ export default async function handler(req, res) {
     if (action === "admin_customers_search") {
       payload.query = body?.query || "";
       payload.limit = body?.limit || 20;
+    }
+
+    if (action === "admin_customer_create") {
+      payload.customerDisplayName = body?.customerDisplayName || "";
+      payload.store = body?.store || "";
+      payload.area = body?.area || body?.soi || "";
+      payload.phone = body?.phone || "";
+      payload.address = body?.address || body?.defaultAddress || "";
     }
 
     if (action === "admin_order") {

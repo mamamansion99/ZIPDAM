@@ -175,13 +175,16 @@ ADMIN
 LEGACY
 ```
 
-Admin-created orders use the selected customer's verified, existing LINE identity:
+Admin-created orders may use either a verified LINE customer or an unlinked
+manual customer:
 
 ```text
-lineUserId = selected customer U...
-customerId = selected customer U...
+linked: lineUserId = customerId = selected customer U...
+manual: lineUserId = "" and customerId = MANUAL-####
 createdByLineUserId = verified admin U...
 orderMode = ADMIN
+linked loyaltyStatus = PENDING
+manual loyaltyStatus = EXCLUDED
 ```
 
 The frontend must never create an admin order by changing `orderMode` on the
@@ -362,6 +365,7 @@ Calculates frequently purchased products from Orders + OrderItems for the same L
 ```text
 admin_status
 admin_customers_search
+admin_customer_create
 admin_order
 ```
 
@@ -369,16 +373,21 @@ Every admin request requires a current LINE Login `idToken`. The verified token
 subject must be listed in `ADMIN_LINE_USER_IDS` (or the legacy singular
 `ADMIN_LINE_USER_ID`) in Script Properties.
 
-`admin_customers_search` returns existing customers with a real linked LINE ID.
-`admin_order` accepts a selected canonical customer ID, resolves the customer
-from the Customer sheet, resolves all product pricing from Product, and writes:
+`admin_customers_search` returns existing linked and manual customers.
+`admin_customer_create` creates an unlinked Customer row using the next stable
+`MANUAL-####` ID. Its `lineUserId` remains blank, `type=MANUAL`, and it is
+excluded from loyalty until a future verified LINE-linking flow is completed.
+
+`admin_order` accepts a selected linked or manual customer ID, resolves the
+customer from the Customer sheet, resolves all product pricing from Product,
+and writes:
 
 ```text
-lineUserId = selected customer LINE ID
-customerId = selected customer LINE ID
+lineUserId = selected LINE ID, or blank for manual customers
+customerId = selected LINE ID or MANUAL-####
 createdByLineUserId = acting admin LINE ID
 orderMode = ADMIN
-loyaltyStatus = PENDING
+loyaltyStatus = PENDING for linked, EXCLUDED for manual
 ```
 
 ## Script Properties
@@ -398,6 +407,7 @@ SHIPPING_THRESHOLD
 ALLOW_GUEST_ORDERS
 ALLOW_LINE_ID_MISMATCH
 LAST_ORDER_NO
+LAST_MANUAL_CUSTOMER_NO
 LAST_TEMPLATE_NO
 ```
 
@@ -427,9 +437,10 @@ Orders sharing the same real LINE ID are combined automatically even when displa
 
 Orders created from the owner's normal `SELF` flow are counted under the
 owner's LINE ID. The current frontend also provides a separate secure
-`ADMIN` flow for configured admins and existing LINE-linked customers.
-Unlinked/manual customer creation remains excluded so that loyalty totals are
-never assigned to an unverified identity.
+`ADMIN` flow for configured admins. Admins can select an existing customer or
+create a manual customer. Manual customers and their orders remain excluded
+from loyalty totals so that rewards are never assigned to an unverified
+identity.
 
 ## Resolved spreadsheet issue
 

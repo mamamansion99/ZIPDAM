@@ -10,7 +10,7 @@ import {
 import { slideUpSheet, tapScale } from "../lib/motion";
 import { TH, formatTHB } from "../lib/i18n";
 import { getLiffAuth, requireLiffAuth } from "../lib/liffAuth";
-import { AdminCustomer } from "../types";
+import { AdminCustomer, NewAdminCustomer } from "../types";
 
 type ContactInfo = {
   store: string;
@@ -20,6 +20,14 @@ type ContactInfo = {
 };
 
 const EMPTY_CONTACT: ContactInfo = {
+  store: "",
+  area: "",
+  phone: "",
+  address: "",
+};
+
+const EMPTY_NEW_CUSTOMER: NewAdminCustomer = {
+  displayName: "",
   store: "",
   area: "",
   phone: "",
@@ -57,6 +65,11 @@ export const CartSheet = () => {
   const [customerResults, setCustomerResults] = useState<AdminCustomer[]>([]);
   const [customerSearching, setCustomerSearching] = useState(false);
   const [customerSearchError, setCustomerSearchError] = useState("");
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] =
+    useState<NewAdminCustomer>(EMPTY_NEW_CUSTOMER);
+  const [customerCreating, setCustomerCreating] = useState(false);
+  const [customerCreateError, setCustomerCreateError] = useState("");
   const shippingFee = getShippingFee(itemsTotal);
   const isLowOrderShipping =
     itemsTotal > 0 &&
@@ -245,6 +258,8 @@ export const CartSheet = () => {
 
   const openCustomerSelection = () => {
     if (orderMode === "SELF") setSelfContactInfo(contactInfo);
+    setShowCreateCustomer(false);
+    setCustomerCreateError("");
     setShowCustomerModal(true);
     if (!customerResults.length) void searchCustomers("");
   };
@@ -258,7 +273,61 @@ export const CartSheet = () => {
       phone: customer.phone || "",
       address: customer.defaultAddress || "",
     });
+    setShowCreateCustomer(false);
+    setCustomerCreateError("");
     setShowCustomerModal(false);
+  };
+
+  const createCustomer = async () => {
+    if (customerCreating) return;
+    if (
+      !newCustomer.displayName.trim() ||
+      !newCustomer.store.trim() ||
+      !newCustomer.area.trim() ||
+      !newCustomer.phone.trim()
+    ) {
+      setCustomerCreateError("กรุณากรอกชื่อ ร้าน พื้นที่ และเบอร์โทร");
+      return;
+    }
+
+    setCustomerCreating(true);
+    setCustomerCreateError("");
+    try {
+      const { idToken, lineUserId, displayName } = await requireLiffAuth();
+      const response = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "admin_customer_create",
+          idToken,
+          lineUserId,
+          displayName,
+          customerDisplayName: newCustomer.displayName,
+          store: newCustomer.store,
+          area: newCustomer.area,
+          phone: newCustomer.phone,
+          address: newCustomer.address,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false || !data.customer) {
+        throw new Error(data.error || "สร้างลูกค้าไม่สำเร็จ");
+      }
+
+      const customer = data.customer as AdminCustomer;
+      setCustomerResults((current) => [
+        customer,
+        ...current.filter((item) => item.customerId !== customer.customerId),
+      ]);
+      setNewCustomer(EMPTY_NEW_CUSTOMER);
+      chooseCustomer(customer);
+    } catch (error) {
+      setCustomerCreateError(
+        error instanceof Error ? error.message : String(error),
+      );
+    } finally {
+      setCustomerCreating(false);
+    }
   };
 
   const switchToSelfOrder = () => {
@@ -625,10 +694,12 @@ export const CartSheet = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">
-                      เลือกลูกค้า
+                      {showCreateCustomer ? "สร้างลูกค้าใหม่" : "เลือกลูกค้า"}
                     </h3>
                     <p className="mt-1 text-sm text-gray-600">
-                      ค้นหาด้วยชื่อ ร้าน เบอร์โทร หรือ LINE ID
+                      {showCreateCustomer
+                        ? "ลูกค้าใหม่จะยังไม่เชื่อม LINE และไม่ร่วมสะสมยอด"
+                        : "ค้นหาด้วยชื่อ ร้าน เบอร์โทร หรือรหัสลูกค้า"}
                     </p>
                   </div>
                   <button
@@ -639,30 +710,157 @@ export const CartSheet = () => {
                     ✕
                   </button>
                 </div>
-                <form
-                  className="mt-4 flex gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void searchCustomers();
-                  }}
-                >
-                  <input
-                    className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
-                    placeholder="ชื่อลูกค้า / ร้าน / เบอร์โทร"
-                    value={customerQuery}
-                    onChange={(event) => setCustomerQuery(event.target.value)}
-                  />
+                {showCreateCustomer ? (
                   <button
-                    type="submit"
-                    disabled={customerSearching}
-                    className="rounded-xl bg-zipdam-gradient px-4 py-2 font-semibold text-white disabled:opacity-60"
+                    type="button"
+                    onClick={() => {
+                      setShowCreateCustomer(false);
+                      setCustomerCreateError("");
+                    }}
+                    className="mt-4 text-sm font-semibold text-zipdam-gold"
                   >
-                    {customerSearching ? "กำลังค้น..." : "ค้นหา"}
+                    ← กลับไปเลือกลูกค้า
                   </button>
-                </form>
+                ) : (
+                  <>
+                    <form
+                      className="mt-4 flex gap-2"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void searchCustomers();
+                      }}
+                    >
+                      <input
+                        className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                        placeholder="ชื่อลูกค้า / ร้าน / เบอร์โทร"
+                        value={customerQuery}
+                        onChange={(event) =>
+                          setCustomerQuery(event.target.value)
+                        }
+                      />
+                      <button
+                        type="submit"
+                        disabled={customerSearching}
+                        className="rounded-xl bg-zipdam-gradient px-4 py-2 font-semibold text-white disabled:opacity-60"
+                      >
+                        {customerSearching ? "กำลังค้น..." : "ค้นหา"}
+                      </button>
+                    </form>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateCustomer(true);
+                        setCustomerCreateError("");
+                      }}
+                      className="mt-3 w-full rounded-xl border border-zipdam-gold/40 bg-zipdam-gold/5 px-4 py-2.5 text-sm font-bold text-zipdam-gold"
+                    >
+                      + สร้างลูกค้าใหม่
+                    </button>
+                  </>
+                )}
               </div>
 
-              <div className="flex-1 space-y-2 overflow-y-auto p-4">
+              {showCreateCustomer ? (
+                <div className="flex-1 space-y-3 overflow-y-auto p-5">
+                  {customerCreateError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                      {customerCreateError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ชื่อลูกค้า
+                    </label>
+                    <input
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                      placeholder="ชื่อที่ใช้เรียกลูกค้า"
+                      value={newCustomer.displayName}
+                      onChange={(event) =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          displayName: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ชื่อร้าน
+                    </label>
+                    <input
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                      placeholder="ชื่อร้าน"
+                      value={newCustomer.store}
+                      onChange={(event) =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          store: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ซอย / พื้นที่
+                    </label>
+                    <input
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                      placeholder="พื้นที่จัดส่ง"
+                      value={newCustomer.area}
+                      onChange={(event) =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          area: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      เบอร์โทร
+                    </label>
+                    <input
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                      placeholder="เช่น 0812345678"
+                      value={newCustomer.phone}
+                      onChange={(event) =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          phone: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      ที่อยู่ (ถ้ามี)
+                    </label>
+                    <textarea
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zipdam-gold"
+                      placeholder="บ้านเลขที่, อาคาร, หมายเหตุจัดส่ง"
+                      rows={3}
+                      value={newCustomer.address}
+                      onChange={(event) =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          address: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={customerCreating}
+                    onClick={() => void createCustomer()}
+                    className="h-12 w-full rounded-xl bg-zipdam-gradient font-bold text-white shadow-md disabled:opacity-60"
+                  >
+                    {customerCreating
+                      ? "กำลังสร้างลูกค้า..."
+                      : "สร้างและเลือกลูกค้านี้"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex-1 space-y-2 overflow-y-auto p-4">
                 {customerSearchError && (
                   <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                     {customerSearchError}
@@ -672,7 +870,7 @@ export const CartSheet = () => {
                   !customerSearchError &&
                   customerResults.length === 0 && (
                     <div className="py-10 text-center text-sm text-zipdam-muted">
-                      ไม่พบลูกค้าที่เชื่อม LINE แล้ว
+                      ไม่พบลูกค้า
                     </div>
                   )}
                 {customerResults.map((customer) => (
@@ -701,12 +899,15 @@ export const CartSheet = () => {
                         </div>
                       </div>
                       <span className="shrink-0 rounded-full bg-zipdam-surface2 px-2 py-1 text-[10px] font-medium text-zipdam-muted">
-                        …{customer.lineUserId.slice(-6)}
+                        {customer.lineUserId
+                          ? `LINE …${customer.lineUserId.slice(-6)}`
+                          : customer.customerId}
                       </span>
                     </div>
                   </button>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
