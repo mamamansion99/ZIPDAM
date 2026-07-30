@@ -72,6 +72,9 @@ The frontend API proxies this payload to the deployed Apps Script web app.
    discard a pending order.
 9. All admin/profile/order actions wait for the shared `liff.init()` promise so
    they cannot run before an external-browser login callback is processed.
+10. The browser reads `sub`, `name` and `picture` from the decoded ID token and
+    sends only the raw ID token to the backend, which independently verifies it
+    with LINE. Checkout does not depend on a separate `liff.getProfile()` call.
 
 ## Spreadsheet schema
 

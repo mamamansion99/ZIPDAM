@@ -49,21 +49,26 @@ export function isIdTokenExpired(
   idToken?: string | null,
   clockSkewSeconds = 60,
 ) {
-  if (!idToken) return true;
+  const payload = decodeIdTokenPayload(idToken);
+  if (!payload) return true;
+  const expiresAt = Number(payload.exp);
+  if (!Number.isFinite(expiresAt)) return true;
+  return expiresAt <= Math.floor(Date.now() / 1000) + clockSkewSeconds;
+}
+
+function decodeIdTokenPayload(idToken?: string | null): Record<string, any> | null {
+  if (!idToken) return null;
   try {
     const encodedPayload = idToken.split(".")[1];
-    if (!encodedPayload) return true;
+    if (!encodedPayload) return null;
     const normalized = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
     const padded = normalized.padEnd(
       normalized.length + ((4 - (normalized.length % 4)) % 4),
       "=",
     );
-    const payload = JSON.parse(atob(padded));
-    const expiresAt = Number(payload?.exp);
-    if (!Number.isFinite(expiresAt)) return true;
-    return expiresAt <= Math.floor(Date.now() / 1000) + clockSkewSeconds;
+    return JSON.parse(atob(padded));
   } catch (_) {
-    return true;
+    return null;
   }
 }
 
@@ -171,16 +176,16 @@ async function runLiffInitialization(
     return beginLiffReauth(liff);
   }
 
-  const profile = await liff.getProfile();
-  if (!isRealLineUserId(profile?.userId)) {
+  const claims = liff.getDecodedIDToken?.() || decodeIdTokenPayload(idToken);
+  if (!isRealLineUserId(claims?.sub)) {
     throw new Error("ไม่สามารถยืนยันบัญชี LINE ได้");
   }
 
   const auth = {
     idToken,
-    lineUserId: profile.userId,
-    displayName: profile.displayName || "LINE customer",
-    pictureUrl: profile.pictureUrl,
+    lineUserId: claims.sub,
+    displayName: claims.name || "LINE customer",
+    pictureUrl: claims.picture,
   };
   clearReauthMarker();
   clearLiffCallbackParameters();
@@ -226,18 +231,18 @@ export async function requireLiffAuth(): Promise<{
       return beginLiffReauth(liff);
     }
 
-    const profile = await liff.getProfile();
+    const claims = liff.getDecodedIDToken?.() || decodeIdTokenPayload(idToken);
 
-    if (!idToken || !isRealLineUserId(profile?.userId)) {
+    if (!idToken || !isRealLineUserId(claims?.sub)) {
       throw new Error(authError);
     }
 
     const nextAuth = {
       idToken,
-      lineUserId: profile.userId,
+      lineUserId: claims.sub,
       displayName:
-        profile.displayName || getLiffAuth().displayName || "LINE customer",
-      pictureUrl: profile.pictureUrl,
+        claims.name || getLiffAuth().displayName || "LINE customer",
+      pictureUrl: claims.picture,
     };
     clearReauthMarker();
     clearLiffCallbackParameters();
