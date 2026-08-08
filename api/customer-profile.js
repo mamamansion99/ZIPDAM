@@ -37,7 +37,8 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const requestedAction = String(body.action || '').trim();
-    const action = requestedAction === 'customer_profile_set' ? 'customer_profile_set' : 'customer_profile';
+    const allowedActions = ['customer_profile_set', 'customer_summary'];
+    const action = allowedActions.includes(requestedAction) ? requestedAction : 'customer_profile';
 
     const payload = {
       action,

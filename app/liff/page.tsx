@@ -10,6 +10,7 @@ import { FavoritesProvider } from '../../components/FavoritesContext';
 import { Toast } from '../../components/Toast';
 import { CartSheet } from '../../components/CartSheet';
 import { OrderSuccess } from '../../components/OrderSuccess';
+import { ProfileSheet } from '../../components/ProfileSheet';
 import { TH } from '../../lib/i18n';
 import { Product } from '../../types';
 import { getLiffAuth, initializeLiffAuth } from '../../lib/liffAuth';
@@ -20,6 +21,7 @@ export default function LiffPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [status, setStatus] = useState<CatalogStatus>('loading');
   const [profile, setProfile] = useState<{ displayName?: string; pictureUrl?: string }>({});
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const existing = getLiffAuth();
@@ -106,7 +108,11 @@ export default function LiffPage() {
       <FavoritesProvider>
       <main className="min-h-screen pb-safe-area relative bg-zipdam-bg text-zipdam-text font-sans">
         <div className="mx-auto w-full max-w-md">
-          <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
+          <Header
+            displayName={profile.displayName}
+            pictureUrl={profile.pictureUrl}
+            onProfileClick={() => setProfileOpen(true)}
+          />
 
           <div className="mt-4 space-y-4">
             {status === 'loading' && renderSkeleton()}
@@ -124,6 +130,13 @@ export default function LiffPage() {
         <Toast />
         <CartSheet />
         <OrderSuccess />
+        <ProfileSheet
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          products={products}
+          displayName={profile.displayName}
+          pictureUrl={profile.pictureUrl}
+        />
       </main>
       </FavoritesProvider>
     </CartProvider>
