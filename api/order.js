@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const gasUrl = "https://script.google.com/macros/s/AKfycbz7e8urAY_67A-NkV6sO6BLVGJWt1s8ZP9rNqvNYzB6rluvYeaZVeBMdtFAfEV7celD/exec";
+  const gasUrl = "https://script.google.com/macros/s/AKfycbxGy-kWw53bmx1cM1yLG6hYSV9KBgBVwJyQtaD7goXsRW0zEETlyAVgQEXL3YIg6zrk/exec";
 
   const postToGas = async (url, payload) => {
     const headers = { "content-type": "application/json" };

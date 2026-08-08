@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MOCK_PRODUCTS } from '../../../lib/tokens';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxoHkWuWwQW31RtIj3ZxG8adm6qQhm0bycLyrWZvfPYXebG_qvKzeaCtY6PjujiXflI/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxGy-kWw53bmx1cM1yLG6hYSV9KBgBVwJyQtaD7goXsRW0zEETlyAVgQEXL3YIg6zrk/exec';
 
 const parsePackSize = (value: any) => {
   if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
