@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Header } from './components/Header';
 import { BrowseView } from './components/BrowseView';
+import { ReorderRow } from './components/ReorderRow';
 import { StickyCartBar } from './components/StickyCartBar';
 import { CartProvider } from './components/CartContext';
 import { FavoritesProvider } from './components/FavoritesContext';
 import { Toast } from './components/Toast';
 import { CartSheet } from './components/CartSheet';
 import { OrderSuccess } from './components/OrderSuccess';
-import { MOCK_PRODUCTS } from './lib/tokens';
+import { TH } from './lib/i18n';
 import { Product } from './types';
 import { getLiffAuth, initializeLiffAuth } from './lib/liffAuth';
 
+type CatalogStatus = 'loading' | 'ready' | 'error';
+
 function App() {
-  const [products, setProducts] = useState<Product[]>([...MOCK_PRODUCTS]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [status, setStatus] = useState<CatalogStatus>('loading');
   const [profile, setProfile] = useState<{ displayName?: string; pictureUrl?: string }>({});
 
   useEffect(() => {
@@ -44,51 +47,79 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
-  // For the SPA preview (index.html), /api/catalog might not exist unless
-  // proxied or mocked. We include the fetch for completeness,
-  // but it will likely fallback to MOCK_PRODUCTS if 404.
-  useEffect(() => {
-    fetch('/api/catalog')
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('API not available');
-      })
-      .then(data => {
-        if (data.products && Array.isArray(data.products)) {
-          setProducts(data.products);
-        }
-      })
-      .catch(() => {
-        console.log("Running in standalone mode or API unavailable, using mock data.");
-      })
-      .finally(() => setIsLoading(false));
+  const loadCatalog = useCallback(async () => {
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/catalog');
+      const data = await res.json();
+      if (!res.ok || data?.ok === false || !Array.isArray(data?.products)) {
+        throw new Error(data?.error || 'CATALOG_UNAVAILABLE');
+      }
+      setProducts(data.products);
+      setStatus('ready');
+    } catch (err) {
+      // Showing sample products here would hide a real outage behind a
+      // storefront that looks fine, so fail loudly instead.
+      console.error('Failed to load catalog', err);
+      setProducts([]);
+      setStatus('error');
+    }
   }, []);
 
+  useEffect(() => { loadCatalog(); }, [loadCatalog]);
+
+  // Mirrors the real 2-column grid so nothing jumps when the catalog lands.
   const renderSkeleton = () => (
-    <div className="space-y-4 px-4 mt-2">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white border border-zipdam-border rounded-2xl p-4 shadow-sm animate-pulse">
-          <div className="h-4 w-32 bg-zipdam-border/50 rounded mb-3"></div>
-          <div className="h-3 w-full bg-zipdam-border/40 rounded mb-2"></div>
-          <div className="h-3 w-4/5 bg-zipdam-border/30 rounded"></div>
+    <div className="px-4 grid grid-cols-2 gap-3" aria-hidden="true">
+      {[0, 1, 2, 3].map(i => (
+        <div key={i} className="bg-white border border-zipdam-border rounded-2xl p-3 shadow-sm animate-pulse">
+          <div className="aspect-square w-full rounded-xl bg-zipdam-border/40 mb-3"></div>
+          <div className="h-3 w-4/5 bg-zipdam-border/50 rounded mb-2"></div>
+          <div className="h-3 w-2/5 bg-zipdam-border/30 rounded mb-4"></div>
+          <div className="h-5 w-1/2 bg-zipdam-border/40 rounded"></div>
         </div>
       ))}
+    </div>
+  );
+
+  const renderError = () => (
+    <div className="px-4">
+      <div className="bg-white border border-zipdam-border rounded-2xl p-6 text-center shadow-sm">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zipdam-surface2 flex items-center justify-center text-zipdam-danger">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+        <h2 className="font-bold text-zipdam-text mb-1">{TH.catalogErrorTitle}</h2>
+        <p className="text-sm text-zipdam-muted mb-4">{TH.catalogErrorMessage}</p>
+        <button
+          onClick={loadCatalog}
+          className="bg-zipdam-gradient text-white font-bold text-sm rounded-xl h-11 px-6 shadow-md shadow-zipdam-gold/30"
+        >
+          {TH.retry}
+        </button>
+      </div>
     </div>
   );
 
   return (
     <CartProvider>
       <FavoritesProvider>
-      <main className="min-h-screen pb-24 relative bg-zipdam-surface font-sans text-zipdam-text">
-        <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
+      <main className="min-h-screen pb-24 relative bg-zipdam-bg font-sans text-zipdam-text">
+        <div className="mx-auto w-full max-w-md">
+          <Header displayName={profile.displayName} pictureUrl={profile.pictureUrl} />
 
-        {isLoading ? (
-          <div className="mt-4">{renderSkeleton()}</div>
-        ) : (
-          <div className="mt-4">
-            <BrowseView products={products} />
+          <div className="mt-4 space-y-4">
+            {status === 'loading' && renderSkeleton()}
+            {status === 'error' && renderError()}
+            {status === 'ready' && (
+              <>
+                <ReorderRow products={products} />
+                <BrowseView products={products} />
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         <StickyCartBar />
         <Toast />

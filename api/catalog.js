@@ -81,7 +81,9 @@ export default async function handler(req, res) {
     try {
       payload = JSON.parse(text);
     } catch (_) {
-      res.status(response.status).setHeader("content-type", "application/json").send(text);
+      // Apps Script answers permission problems with an HTML page and HTTP 200,
+      // so a non-JSON body has to surface as a hard failure, not as a success.
+      res.status(502).json({ ok: false, error: "BAD_GAS_RESPONSE" });
       return;
     }
 
@@ -91,16 +93,17 @@ export default async function handler(req, res) {
       ? payload.catalog
       : null;
 
-    if (rawProducts) {
-      const normalized = rawProducts.map(normalizeProduct).filter(Boolean);
-      payload = {
-        ok: payload?.ok !== false,
-        products: normalized,
-        catalog: payload.catalog ?? normalized,
-      };
+    if (!rawProducts) {
+      res.status(502).json({ ok: false, error: "CATALOG_UNAVAILABLE" });
+      return;
     }
 
-    res.status(response.status).json(payload);
+    const normalized = rawProducts.map(normalizeProduct).filter(Boolean);
+    res.status(200).json({
+      ok: payload?.ok !== false,
+      products: normalized,
+      catalog: payload.catalog ?? normalized,
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
   }

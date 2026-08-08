@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { MOCK_PRODUCTS } from '../../../lib/tokens';
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxGy-kWw53bmx1cM1yLG6hYSV9KBgBVwJyQtaD7goXsRW0zEETlyAVgQEXL3YIg6zrk/exec';
 
@@ -103,9 +102,14 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ products: MOCK_PRODUCTS });
+    // Never fall back to sample data: a silent placeholder catalog looks like a
+    // working store while hiding an outage.
+    throw new Error('GAS returned no catalog');
   } catch (error) {
     console.error('Catalog Fetch Error:', error);
-    return NextResponse.json({ products: MOCK_PRODUCTS });
+    return NextResponse.json(
+      { ok: false, error: 'CATALOG_UNAVAILABLE' },
+      { status: 502 }
+    );
   }
 }
